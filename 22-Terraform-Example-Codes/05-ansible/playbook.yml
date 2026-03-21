@@ -1,0 +1,59 @@
+---
+# Playbook Ansible : Installation et configuration d'Apache HTTPD
+# Déclenché automatiquement par Terraform via local-exec
+
+- name: Configuration du serveur web
+  hosts: webservers
+  become: true  # sudo
+
+  vars:
+    web_root: /var/www/html
+    app_name: "Terraform + Ansible Demo"
+
+  tasks:
+    - name: Mettre à jour les packages système
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: true
+
+    - name: Installer Apache HTTPD
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+
+    - name: Démarrer et activer Apache
+      ansible.builtin.systemd:
+        name: httpd
+        state: started
+        enabled: true
+
+    - name: Créer la page d'accueil
+      ansible.builtin.copy:
+        dest: "{{ web_root }}/index.html"
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head><title>{{ app_name }}</title></head>
+          <body>
+            <h1>Bienvenue sur {{ app_name }}</h1>
+            <p>Cette instance a été provisionnée par <strong>Terraform</strong>
+               et configurée par <strong>Ansible</strong>.</p>
+            <ul>
+              <li>Serveur : {{ ansible_hostname }}</li>
+              <li>IP : {{ ansible_default_ipv4.address }}</li>
+              <li>OS : {{ ansible_distribution }} {{ ansible_distribution_version }}</li>
+            </ul>
+          </body>
+          </html>
+        mode: '0644'
+
+    - name: Vérifier qu'Apache répond
+      ansible.builtin.uri:
+        url: "http://localhost"
+        return_content: true
+      register: http_response
+
+    - name: Afficher le résultat
+      ansible.builtin.debug:
+        msg: "Serveur web opérationnel ! Status HTTP : {{ http_response.status }}"
