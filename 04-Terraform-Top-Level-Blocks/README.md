@@ -36,8 +36,6 @@ Chaque bloc a son fichier dédié par convention :
 
 > **Note version** : la contrainte `~> 0.14.3` du README original est obsolète. Utiliser `~> 1.14` pour Terraform 1.14.x (version actuelle stable).
 
-
-
 ![](C:\Users\DELL\Desktop\terraform-beginners-guide\04-Terraform-Top-Level-Blocks\imgs\arborescence.jpg)
 
 ### 

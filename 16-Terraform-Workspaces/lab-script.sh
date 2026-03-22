@@ -1,77 +1,56 @@
-#!/bin/bash
-# ######################################################
-# Lab : 16 - Terraform Workspaces
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 16 - Terraform Workspaces
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "##################################################"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt && validate"
-echo "##################################################"
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 3: Vérifier le workspace actif (default)"
-echo "##################################################"
+# Affiche le workspace actif (default au départ)
 terraform workspace show
+
+# Liste tous les workspaces existants
 terraform workspace list
 
-echo ""
-echo "##################################################"
-echo "# Step 4: Créer et déployer le workspace DEV"
-echo "##################################################"
+# ── Workspace DEV ────────────────────────────────────────────
+# Crée et bascule vers le workspace dev
 terraform workspace new dev
 terraform workspace show
 terraform plan
 terraform apply -auto-approve
 terraform output
 
-echo ""
-echo "##################################################"
-echo "# Step 5: Créer et déployer le workspace STAGING"
-echo "##################################################"
+# ── Workspace STAGING ────────────────────────────────────────
+# Crée et bascule vers le workspace staging
 terraform workspace new staging
 terraform workspace show
 terraform plan
 terraform apply -auto-approve
 terraform output
 
-echo ""
-echo "##################################################"
-echo "# Step 6: Créer et déployer le workspace PROD"
-echo "##################################################"
+# ── Workspace PROD ───────────────────────────────────────────
+# Crée et bascule vers le workspace prod
 terraform workspace new prod
 terraform workspace show
 terraform plan
 terraform apply -auto-approve
 terraform output
 
-echo ""
-echo "##################################################"
-echo "# Step 7: Lister tous les workspaces"
-echo "##################################################"
+# Liste tous les workspaces (dev, staging, prod, default)
 terraform workspace list
 
-echo ""
-echo "##################################################"
-echo "# Step 8: Basculer entre workspaces"
-echo "##################################################"
+# Bascule vers dev et affiche ses outputs
 terraform workspace select dev
 terraform workspace show
 terraform output
 
-echo ""
-echo "##################################################"
-echo "# Step 9: terraform destroy dans chaque workspace (cleanup)"
-echo "##################################################"
+# ── Nettoyage : destroy dans chaque workspace ────────────────
 terraform workspace select dev
 terraform destroy -auto-approve
 
@@ -81,15 +60,11 @@ terraform destroy -auto-approve
 terraform workspace select prod
 terraform destroy -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 10: Supprimer les workspaces et revenir à default"
-echo "##################################################"
+# Revient à default et supprime les workspaces créés
 terraform workspace select default
 terraform workspace delete dev
 terraform workspace delete staging
 terraform workspace delete prod
-terraform workspace list
 
-echo ""
-echo "Lab terminé avec succès !"
+# Vérifie qu'il ne reste que le workspace default
+terraform workspace list

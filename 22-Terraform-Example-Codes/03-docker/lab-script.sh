@@ -1,66 +1,38 @@
-#!/bin/bash
-# ######################################################
-# Étude de Cas 3 : Provider Docker (kreuzwerker/docker)
-# ######################################################
-# PRÉREQUIS :
-#   - Docker Desktop installé et démarré
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Étude de Cas 3 - Provider Docker (kreuzwerker/docker)
+# PRÉREQUIS : Docker installé et démarré
+# ============================================================
 
-set -e
+# Vérifie que Docker est démarré
+docker info
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-
-echo "======================================================"
-echo "  Étude de Cas 3 : Provider Docker"
-echo "======================================================"
-
-echo ""
-echo "--- Vérification que Docker est démarré ---"
-if docker info > /dev/null 2>&1; then
-  echo "Docker est prêt !"
-else
-  echo "ERREUR : Docker n'est pas démarré. Lancez Docker Desktop."
-  exit 1
-fi
-
-echo ""
-echo "--- terraform init ---"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "--- terraform fmt && validate ---"
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "--- terraform plan ---"
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-echo ""
-echo "--- terraform apply ---"
+# Crée les conteneurs et le réseau Docker via Terraform
 terraform apply -auto-approve
 
-echo ""
-echo "--- terraform output ---"
+# Affiche les outputs (ports, noms des conteneurs)
 terraform output
 
-echo ""
-echo "--- Vérification des conteneurs Docker ---"
+# Liste les conteneurs gérés par Terraform
 docker ps --filter "label=managed-by=terraform" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
 
-echo ""
-echo "--- Test de Nginx ---"
-sleep 2
-curl -s -o /dev/null -w "Nginx HTTP Status : %{http_code}\n" http://localhost:8080 || echo "Nginx non accessible"
+# Teste l'accès à Nginx (HTTP 200 attendu)
+curl -s -o /dev/null -w "Nginx HTTP Status : %{http_code}\n" http://localhost:8080
 
-echo ""
-echo "--- Vérification du réseau Docker ---"
+# Vérifie le réseau Docker créé par Terraform
 docker network inspect terraform-network --format "Réseau : {{.Name}} (Driver: {{.Driver}})"
 
-echo ""
-echo "--- terraform destroy (cleanup) ---"
+# Détruit tous les conteneurs et le réseau (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

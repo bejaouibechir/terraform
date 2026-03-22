@@ -1,73 +1,36 @@
-#!/bin/bash
-# ######################################################
-# Lab : 14 - Terraform Refresh
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 14 - Terraform Refresh
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "##################################################"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt"
-echo "##################################################"
+# Formate les fichiers .tf
 terraform fmt
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform validate"
-echo "##################################################"
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform plan"
-echo "##################################################"
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform apply"
-echo "##################################################"
+# Crée les ressources
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 6: terraform show (état avant refresh)"
-echo "##################################################"
+# Inspecte le state AVANT refresh
 terraform show
 
-echo ""
-echo "##################################################"
-echo "# Step 7: terraform refresh"
-echo "# Synchronise le state avec l'infrastructure réelle"
-echo "# NOTE : Ajoutez manuellement un tag sur le VPC depuis"
-echo "#        la Console AWS avant cette étape pour observer"
-echo "#        le comportement du refresh"
-echo "##################################################"
+# Synchronise le state avec l'infrastructure réelle
+# NOTE : pour observer le comportement, ajoutez manuellement un tag
+#        sur le VPC depuis la Console AWS avant cette commande
 terraform refresh
 
-echo ""
-echo "##################################################"
-echo "# Step 8: terraform show (état après refresh)"
-echo "##################################################"
+# Inspecte le state APRÈS refresh (le nouveau tag doit apparaître)
 terraform show
 
-echo ""
-echo "##################################################"
-echo "# Step 9: terraform plan"
-echo "# Vérifiez si des différences sont détectées"
-echo "##################################################"
+# Vérifie si des différences sont détectées entre state et code
 terraform plan
 
-echo ""
-echo "##################################################"
-echo "# Step 10: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

@@ -1,71 +1,47 @@
-# ######################################################
-# Lab : 12 - Terraform State
-# ######################################################
+# ============================================================
+# Lab 12 - Terraform State
+# Exécuter depuis : 12-Terraform-State\
 #
-# PRÉREQUIS (State Distant) :
-#   - Bucket S3 : "tf-aws-backend" créé dans us-east-1
-#   - Dossier S3 : "tf/dev/"
-#   - Table DynamoDB : "tf-dev-state-lock" avec clé "LockID"
-#
-# ######################################################
+# PRÉREQUIS (Option B — State distant) :
+#   - Bucket S3      : "tf-aws-backend" dans us-east-1
+#   - Dossier S3     : "tf/dev/"
+#   - Table DynamoDB : "tf-dev-state-lock" (clé : LockID)
+# ============================================================
 
-Write-Host "======================================================" -ForegroundColor Magenta
-Write-Host "  Option A : State LOCAL" -ForegroundColor Magenta
-Write-Host "======================================================" -ForegroundColor Magenta
+# ── Option A : State LOCAL ───────────────────────────────────
+Set-Location tf-state-demo-files\local
 
-Set-Location "$PSScriptRoot\tf-state-demo-files\local"
-
-Write-Host "--- terraform init ---" -ForegroundColor Cyan
 terraform init
-
-Write-Host "--- terraform fmt && validate ---" -ForegroundColor Cyan
 terraform fmt
 terraform validate
-
-Write-Host "--- terraform apply ---" -ForegroundColor Cyan
 terraform apply -auto-approve
 
-Write-Host "--- Vérifier le fichier state local ---" -ForegroundColor Yellow
+# Le fichier terraform.tfstate est stocké localement dans ce répertoire
 Get-Item terraform.tfstate | Select-Object Name, Length, LastWriteTime
-Write-Host "Le state est stocké localement dans terraform.tfstate" -ForegroundColor Yellow
 
-Write-Host "--- terraform destroy ---" -ForegroundColor Cyan
 terraform destroy -auto-approve
+Set-Location ..\..
 
-Set-Location $PSScriptRoot
+# ── Option B : State DISTANT (S3 + DynamoDB) ─────────────────
+# Notez dans les logs l'acquisition du verrou DynamoDB
 
-Write-Host ""
-Write-Host "======================================================" -ForegroundColor Magenta
-Write-Host "  Option B : State DISTANT (S3 + DynamoDB)" -ForegroundColor Magenta
-Write-Host "  PRÉREQUIS : Bucket S3 et Table DynamoDB requis" -ForegroundColor Yellow
-Write-Host "======================================================" -ForegroundColor Magenta
-
-Write-Host "--- terraform init (backend S3) ---" -ForegroundColor Cyan
 terraform init
-
-Write-Host "--- terraform fmt && validate ---" -ForegroundColor Cyan
 terraform fmt
 terraform validate
 
-Write-Host "--- terraform plan ---" -ForegroundColor Cyan
-Write-Host "Observez l'acquisition du verrou de state (DynamoDB)" -ForegroundColor Yellow
+# Observez "Acquiring state lock" dans la sortie
 terraform plan
 
-Write-Host "--- terraform apply ---" -ForegroundColor Cyan
-Write-Host "Observez Acquiring/Releasing state lock" -ForegroundColor Yellow
+# Observez "Acquiring state lock" et "Releasing state lock"
 terraform apply -auto-approve
 
-Write-Host "--- terraform state list ---" -ForegroundColor Cyan
+# Liste les ressources dans le state distant
 terraform state list
 
-Write-Host "--- terraform state show aws_vpc.myvpc ---" -ForegroundColor Cyan
+# Affiche les détails d'une ressource spécifique depuis le state distant
 terraform state show aws_vpc.myvpc
 
-Write-Host "--- terraform state pull ---" -ForegroundColor Cyan
+# Télécharge et affiche le contenu complet du state (JSON)
 terraform state pull
 
-Write-Host "--- terraform destroy ---" -ForegroundColor Cyan
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

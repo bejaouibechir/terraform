@@ -95,11 +95,11 @@ run_check() {
   if command -v docker &>/dev/null && $_DC info &>/dev/null 2>&1; then
     if $_DC ps --filter "name=$LOCALSTACK_CONTAINER" --filter "status=running" -q | grep -q .; then
       ok "Conteneur '$LOCALSTACK_CONTAINER' en cours d'exécution"
-      if curl -s --max-time 3 "http://localhost:${LOCALSTACK_PORT}/_localstack/health" | grep -q '"running"' 2>/dev/null; then
+      if curl -s --max-time 3 "http://localhost:${LOCALSTACK_PORT}/_localstack/health" | grep -qE '"(running|available|initialized)"' 2>/dev/null; then
         ok "LocalStack répond sur http://localhost:${LOCALSTACK_PORT}"
         info "Services actifs :"
         curl -s "http://localhost:${LOCALSTACK_PORT}/_localstack/health" \
-          | jq -r '.services | to_entries[] | select(.value=="running") | "    ✔ \(.key)"' 2>/dev/null \
+          | jq -r '.services | to_entries[] | select((.value=="running") or (.value=="available") or (.value=="initialized") or (.value|type=="object" and .status=="available")) | "    ✔ \(.key)"' 2>/dev/null \
           || echo "    (jq requis pour détailler les services)"
       else
         warn "Conteneur tourne mais ne répond pas encore"
@@ -287,7 +287,7 @@ start_localstack() {
     "$LOCALSTACK_IMAGE" > /dev/null
   info "Attente du démarrage de LocalStack..."
   local attempts=0
-  until curl -s "http://localhost:${LOCALSTACK_PORT}/_localstack/health" | grep -q '"running"' 2>/dev/null; do
+  until curl -s "http://localhost:${LOCALSTACK_PORT}/_localstack/health" | grep -qE '"(running|available|initialized)"' 2>/dev/null; do
     sleep 3; attempts=$((attempts + 1)); echo -n "."
     [[ $attempts -gt 30 ]] && fail "LocalStack n'a pas démarré après 90s"
   done
@@ -311,7 +311,7 @@ fi
 
 info "Services LocalStack actifs :"
 curl -s "http://localhost:${LOCALSTACK_PORT}/_localstack/health" \
-  | jq -r '.services | to_entries[] | select(.value=="running") | "    ✔ \(.key)"' 2>/dev/null \
+  | jq -r '.services | to_entries[] | select((.value=="running") or (.value=="available") or (.value=="initialized") or (.value|type=="object" and .status=="available")) | "    ✔ \(.key)"' 2>/dev/null \
   || echo "    (LocalStack répond sur :${LOCALSTACK_PORT})"
 
 # ─── 6. Cache de plugins Terraform ────────────────────────────────────────────

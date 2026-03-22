@@ -1,78 +1,48 @@
-#!/bin/bash
-# ######################################################
-# Lab : 12 - Terraform State
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 12 - Terraform State
+# Exécuter depuis : 12-Terraform-State/
 #
-# PRÉREQUIS (State Distant) :
-#   - Bucket S3 : "tf-aws-backend" créé dans us-east-1
-#   - Dossier S3 : "tf/dev/"
-#   - Table DynamoDB : "tf-dev-state-lock" avec clé "LockID"
-#
-# Deux options disponibles :
-#   Option A : State LOCAL  (tf-state-demo-files/local/)
-#   Option B : State DISTANT S3 (répertoire principal)
-#
-# ######################################################
+# PRÉREQUIS (Option B — State distant) :
+#   - Bucket S3      : "tf-aws-backend" dans us-east-1
+#   - Dossier S3     : "tf/dev/"
+#   - Table DynamoDB : "tf-dev-state-lock" (clé : LockID)
+# ============================================================
 
-set -e
+# ── Option A : State LOCAL ───────────────────────────────────
+cd tf-state-demo-files/local
 
-echo "======================================================"
-echo "  Option A : State LOCAL"
-echo "======================================================"
-cd "$(dirname "$0")/tf-state-demo-files/local"
-
-echo "--- terraform init ---"
 terraform init
-
-echo "--- terraform fmt && validate ---"
 terraform fmt
 terraform validate
-
-echo "--- terraform apply ---"
 terraform apply -auto-approve
 
-echo "--- Vérifier le fichier state local ---"
+# Le fichier terraform.tfstate est stocké localement dans ce répertoire
 ls -lh terraform.tfstate
-echo "Le state est stocké localement dans terraform.tfstate"
 
-echo "--- terraform destroy ---"
 terraform destroy -auto-approve
+cd ../..
 
-cd - > /dev/null
+# ── Option B : State DISTANT (S3 + DynamoDB) ─────────────────
+# Notez dans les logs l'acquisition du verrou DynamoDB
 
-echo ""
-echo "======================================================"
-echo "  Option B : State DISTANT (S3 + DynamoDB)"
-echo "  PRÉREQUIS : Bucket S3 et Table DynamoDB requis"
-echo "======================================================"
-cd "$(dirname "$0")"
-
-echo "--- terraform init (backend S3) ---"
 terraform init
-
-echo "--- terraform fmt && validate ---"
 terraform fmt
 terraform validate
 
-echo "--- terraform plan ---"
-echo "Observez l'acquisition du verrou de state (DynamoDB)"
+# Observez "Acquiring state lock" dans la sortie
 terraform plan
 
-echo "--- terraform apply ---"
-echo "Observez Acquiring/Releasing state lock"
+# Observez "Acquiring state lock" et "Releasing state lock"
 terraform apply -auto-approve
 
-echo "--- terraform state list ---"
+# Liste les ressources dans le state distant
 terraform state list
 
-echo "--- terraform state show aws_vpc.myvpc ---"
+# Affiche les détails d'une ressource spécifique depuis le state distant
 terraform state show aws_vpc.myvpc
 
-echo "--- terraform state pull ---"
+# Télécharge et affiche le contenu complet du state (JSON)
 terraform state pull
 
-echo "--- terraform destroy ---"
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

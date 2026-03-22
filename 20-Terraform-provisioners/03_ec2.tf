@@ -8,7 +8,7 @@ resource "null_resource" "server_provisioner" {
   # Exécuté localement au moment du terraform apply
   # -------------------------------------------------------
   provisioner "local-exec" {
-    command = "echo '[PROVISIONER] Serveur ${random_pet.server_name.id} (${random_id.server_id.hex}) démarré le $(date)' >> ${path.module}/output/provisioner.log"
+    command = "mkdir -p ${path.module}/output && echo '[PROVISIONER] Serveur ${random_pet.server_name.id} (${random_id.server_id.hex}) démarré le $(date)' >> ${path.module}/output/provisioner.log"
   }
 
   # -------------------------------------------------------

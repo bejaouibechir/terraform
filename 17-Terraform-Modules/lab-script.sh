@@ -1,62 +1,28 @@
-#!/bin/bash
-# ######################################################
-# Lab : 17 - Terraform Modules
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 17 - Terraform Modules
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "# Télécharge les modules et providers"
-echo "##################################################"
+# Initialise et télécharge les modules déclarés
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt -recursive"
-echo "# Formate aussi les fichiers dans modules/"
-echo "##################################################"
+# Formate aussi les fichiers dans le répertoire modules/
 terraform fmt -recursive
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform validate"
-echo "##################################################"
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform plan"
-echo "# Observez les resources créées pour chaque module"
-echo "# (module.vpc_dev.* et module.vpc_prod.*)"
-echo "##################################################"
+# Dans le plan, observez les ressources préfixées module.vpc_dev.* et module.vpc_prod.*
 terraform plan
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform apply"
-echo "##################################################"
+# Crée les ressources pour les deux modules
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 6: terraform output"
-echo "# Affiche les outputs des deux modules"
-echo "##################################################"
+# Affiche les outputs des deux modules (dev et prod)
 terraform output
 
-echo ""
-echo "##################################################"
-echo "# Step 7: terraform state list"
-echo "# Observez les resources préfixées par module.*"
-echo "##################################################"
+# Les ressources sont préfixées par module.<nom>.* dans le state
 terraform state list
 
-echo ""
-echo "##################################################"
-echo "# Step 8: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

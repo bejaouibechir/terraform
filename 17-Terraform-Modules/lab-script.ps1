@@ -1,59 +1,27 @@
-# ######################################################
-# Lab : 17 - Terraform Modules
-# ######################################################
+# ============================================================
+# Lab 17 - Terraform Modules
+# ============================================================
 
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 1: terraform init" -ForegroundColor Cyan
-Write-Host "# Télécharge les modules et providers" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Initialise et télécharge les modules déclarés
 terraform init
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 2: terraform fmt -recursive" -ForegroundColor Cyan
-Write-Host "# Formate aussi les fichiers dans modules/" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Formate aussi les fichiers dans le répertoire modules/
 terraform fmt -recursive
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 3: terraform validate" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 4: terraform plan" -ForegroundColor Cyan
-Write-Host "# Observez les resources pour chaque module" -ForegroundColor Yellow
-Write-Host "# (module.vpc_dev.* et module.vpc_prod.*)" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Dans le plan, observez les ressources préfixées module.vpc_dev.* et module.vpc_prod.*
 terraform plan
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 5: terraform apply" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Crée les ressources pour les deux modules
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 6: terraform output" -ForegroundColor Cyan
-Write-Host "# Affiche les outputs des deux modules" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Affiche les outputs des deux modules (dev et prod)
 terraform output
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 7: terraform state list" -ForegroundColor Cyan
-Write-Host "# Observez les resources préfixées par module.*" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Les ressources sont préfixées par module.<nom>.* dans le state
 terraform state list
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 8: terraform destroy (cleanup)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

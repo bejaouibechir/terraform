@@ -1,50 +1,25 @@
-#!/bin/bash
-# ######################################################
-# Lab : 07 - Terraform Resources
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 07 - Terraform Resources
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "##################################################"
+# Initialise le répertoire Terraform (télécharge les providers)
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt"
-echo "##################################################"
+# Formate les fichiers .tf
 terraform fmt
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform validate"
-echo "##################################################"
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform plan"
-echo "##################################################"
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform apply"
-echo "##################################################"
+# Crée les ressources déclarées
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 6: terraform show"
-echo "##################################################"
+# Inspecte l'état de l'infrastructure créée
 terraform show
 
-echo ""
-echo "##################################################"
-echo "# Step 7: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources créées (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

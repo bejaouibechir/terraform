@@ -1,41 +1,21 @@
-# ######################################################
-# Lab : 04 - Terraform Top Level Blocks
-# ######################################################
+# ============================================================
+# Lab 04 - Terraform Top Level Blocks
+# ============================================================
 
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 1: terraform init" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Initialise le répertoire Terraform (télécharge les providers)
 terraform init
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 2: terraform fmt" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Formate les fichiers .tf selon le style HashiCorp
 terraform fmt
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 3: terraform validate" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 4: terraform plan" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 5: terraform apply" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Crée les ressources déclarées dans les fichiers .tf
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 6: terraform destroy (cleanup)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Détruit toutes les ressources créées (nettoyage)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

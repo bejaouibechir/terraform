@@ -1,66 +1,34 @@
-# ######################################################
-# Étude de Cas 2 : LocalStack — Simulateur AWS Local
-# ######################################################
+# ============================================================
+# Étude de Cas 2 - LocalStack (Simulateur AWS Local)
 # PRÉREQUIS :
-#   - Docker Desktop démarré
-#   - LocalStack installé : pip install localstack
-#   - awslocal CLI (optionnel) : pip install awscli-local
-# ######################################################
+#   - Docker démarré
+#   - LocalStack en cours d'exécution : docker start localstack-main
+# ============================================================
 
-Set-Location $PSScriptRoot
+# Vérifie que LocalStack est démarré et opérationnel
+Invoke-RestMethod http://localhost:4566/_localstack/health
 
-Write-Host "======================================================" -ForegroundColor Magenta
-Write-Host "  Étude de Cas 2 : LocalStack — Simulateur AWS" -ForegroundColor Magenta
-Write-Host "======================================================" -ForegroundColor Magenta
-
-Write-Host ""
-Write-Host "--- Vérification que LocalStack est démarré ---" -ForegroundColor Cyan
-try {
-  $response = Invoke-WebRequest -Uri "http://localhost:4566/_localstack/health" -UseBasicParsing -ErrorAction Stop
-  Write-Host "LocalStack est prêt !" -ForegroundColor Green
-} catch {
-  Write-Host "ATTENTION : LocalStack ne semble pas démarré." -ForegroundColor Red
-  Write-Host "Lancez : localstack start -d" -ForegroundColor Yellow
-  Write-Host "Puis relancez ce script." -ForegroundColor Yellow
-  exit 1
-}
-
-Write-Host ""
-Write-Host "--- terraform init ---" -ForegroundColor Cyan
+# Initialise le répertoire Terraform
 terraform init
 
-Write-Host ""
-Write-Host "--- terraform fmt && validate ---" -ForegroundColor Cyan
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "--- terraform plan ---" -ForegroundColor Cyan
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-Write-Host ""
-Write-Host "--- terraform apply ---" -ForegroundColor Cyan
+# Crée les ressources AWS simulées par LocalStack
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "--- terraform output ---" -ForegroundColor Cyan
+# Affiche les outputs (IDs des ressources créées)
 terraform output
 
-Write-Host ""
-Write-Host "--- Vérification des ressources créées ---" -ForegroundColor Yellow
-if (Get-Command awslocal -ErrorAction SilentlyContinue) {
-  Write-Host "VPCs :" -ForegroundColor Yellow
-  awslocal ec2 describe-vpcs --output table
-  Write-Host ""
-  Write-Host "Buckets S3 :" -ForegroundColor Yellow
-  awslocal s3 ls
-} else {
-  Write-Host "awslocal non disponible — installez avec : pip install awscli-local" -ForegroundColor Yellow
-}
+# Vérifie les ressources créées via awslocal (pip install awscli-local)
+awslocal ec2 describe-vpcs --output table
+awslocal s3 ls
 
-Write-Host ""
-Write-Host "--- terraform destroy (cleanup) ---" -ForegroundColor Cyan
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

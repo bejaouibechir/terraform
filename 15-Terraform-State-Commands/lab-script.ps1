@@ -1,57 +1,30 @@
-# ######################################################
-# Lab : 15 - Terraform State Commands
-# ######################################################
+# ============================================================
+# Lab 15 - Terraform State Commands
+# ============================================================
 
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 1: terraform init" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Initialise le répertoire Terraform
 terraform init
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 2: terraform fmt && validate" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 3: terraform apply" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Crée les ressources
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 4: terraform state list" -ForegroundColor Cyan
-Write-Host "# Liste toutes les resources dans le state" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Liste toutes les ressources gérées dans le state
 terraform state list
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 5: terraform state show <resource>" -ForegroundColor Cyan
-Write-Host "# Affiche les détails d'une resource spécifique" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Affiche les détails complets d'une ressource spécifique
 terraform state show aws_vpc.myvpc
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 6: terraform state pull" -ForegroundColor Cyan
-Write-Host "# Récupère et affiche le state courant" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Télécharge et affiche le contenu complet du state (format JSON)
 terraform state pull
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 7: terraform show" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Inspecte le state dans un format lisible
 terraform show
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 8: terraform destroy (cleanup)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

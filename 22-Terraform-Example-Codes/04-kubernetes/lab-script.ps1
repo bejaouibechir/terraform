@@ -1,82 +1,49 @@
-# ######################################################
-# Étude de Cas 4 : Provider Kubernetes
-# ######################################################
+# ============================================================
+# Étude de Cas 4 - Provider Kubernetes
 # PRÉREQUIS :
 #   - minikube OU kind installé et démarré
-#   - kubectl configuré (fichier ~/.kube/config présent)
+#   - kubectl configuré (~/.kube/config présent)
 #
 # Démarrer minikube : minikube start
 # Démarrer kind     : kind create cluster --name terraform-demo
-# ######################################################
+# ============================================================
 
-Set-Location $PSScriptRoot
-
-Write-Host "======================================================" -ForegroundColor Magenta
-Write-Host "  Étude de Cas 4 : Provider Kubernetes" -ForegroundColor Magenta
-Write-Host "======================================================" -ForegroundColor Magenta
-
-Write-Host ""
-Write-Host "--- Vérification du cluster Kubernetes ---" -ForegroundColor Cyan
-$clusterInfo = kubectl cluster-info 2>&1
-if ($LASTEXITCODE -ne 0) {
-  Write-Host "ERREUR : Cluster Kubernetes non accessible." -ForegroundColor Red
-  Write-Host "Démarrez minikube : minikube start" -ForegroundColor Yellow
-  Write-Host "Ou kind           : kind create cluster --name terraform-demo" -ForegroundColor Yellow
-  exit 1
-}
-Write-Host "Cluster Kubernetes accessible !" -ForegroundColor Green
+# Vérifie l'accès au cluster Kubernetes
+kubectl cluster-info
 kubectl get nodes
 
-Write-Host ""
-Write-Host "--- terraform init ---" -ForegroundColor Cyan
+# Initialise le répertoire Terraform
 terraform init
 
-Write-Host ""
-Write-Host "--- terraform fmt && validate ---" -ForegroundColor Cyan
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "--- terraform plan ---" -ForegroundColor Cyan
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-Write-Host ""
-Write-Host "--- terraform apply ---" -ForegroundColor Cyan
+# Crée les ressources Kubernetes via Terraform
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "--- terraform output ---" -ForegroundColor Cyan
+# Affiche les outputs Terraform
 terraform output
 
-Write-Host ""
-Write-Host "--- Vérification Kubernetes ---" -ForegroundColor Yellow
-Write-Host "Namespace :" -ForegroundColor Yellow
+# Vérifie le namespace créé
 kubectl get namespace terraform-demo
 
-Write-Host ""
-Write-Host "Pods :" -ForegroundColor Yellow
+# Vérifie les pods déployés
 kubectl get pods -n terraform-demo
 
-Write-Host ""
-Write-Host "Services :" -ForegroundColor Yellow
+# Vérifie les services exposés
 kubectl get service -n terraform-demo
 
-Write-Host ""
-Write-Host "ConfigMap :" -ForegroundColor Yellow
+# Vérifie les ConfigMaps créées
 kubectl get configmap -n terraform-demo
 
-Write-Host ""
-Write-Host "--- Test d'accès (minikube) ---" -ForegroundColor Yellow
-if (Get-Command minikube -ErrorAction SilentlyContinue) {
-  $minikubeIp = minikube ip 2>$null
-  if ($minikubeIp) {
-    Write-Host "URL application : http://${minikubeIp}:30080" -ForegroundColor Green
-  }
-}
+# Affiche l'URL d'accès à l'application (minikube uniquement)
+minikube ip
 
-Write-Host ""
-Write-Host "--- terraform destroy (cleanup) ---" -ForegroundColor Cyan
+# Détruit toutes les ressources Kubernetes (nettoyage)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

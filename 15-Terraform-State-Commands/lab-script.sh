@@ -1,60 +1,31 @@
-#!/bin/bash
-# ######################################################
-# Lab : 15 - Terraform State Commands
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 15 - Terraform State Commands
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "##################################################"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt && validate"
-echo "##################################################"
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform apply"
-echo "##################################################"
+# Crée les ressources
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform state list"
-echo "# Liste toutes les resources dans le state"
-echo "##################################################"
+# Liste toutes les ressources gérées dans le state
 terraform state list
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform state show <resource>"
-echo "# Affiche les détails d'une resource spécifique"
-echo "##################################################"
+# Affiche les détails complets d'une ressource spécifique
 terraform state show aws_vpc.myvpc
 
-echo ""
-echo "##################################################"
-echo "# Step 6: terraform state pull"
-echo "# Récupère et affiche le state courant"
-echo "##################################################"
+# Télécharge et affiche le contenu complet du state (format JSON)
 terraform state pull
 
-echo ""
-echo "##################################################"
-echo "# Step 7: terraform show"
-echo "##################################################"
+# Inspecte le state dans un format lisible
 terraform show
 
-echo ""
-echo "##################################################"
-echo "# Step 8: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

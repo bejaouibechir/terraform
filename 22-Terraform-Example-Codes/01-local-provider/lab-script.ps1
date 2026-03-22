@@ -1,52 +1,30 @@
-# ######################################################
-# Étude de Cas 1 : Provider local (hashicorp/local)
-# ######################################################
-# PRÉREQUIS : Terraform installé uniquement (aucun compte cloud requis)
-# ######################################################
+# ============================================================
+# Étude de Cas 1 - Provider hashicorp/local
+# PRÉREQUIS : Terraform installé (aucun compte cloud requis)
+# ============================================================
 
-Set-Location $PSScriptRoot
-
-Write-Host "======================================================" -ForegroundColor Magenta
-Write-Host "  Étude de Cas 1 : Provider hashicorp/local" -ForegroundColor Magenta
-Write-Host "======================================================" -ForegroundColor Magenta
-
-Write-Host ""
-Write-Host "--- terraform init ---" -ForegroundColor Cyan
+# Initialise le répertoire Terraform
 terraform init
 
-Write-Host ""
-Write-Host "--- terraform fmt && validate ---" -ForegroundColor Cyan
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "--- terraform plan ---" -ForegroundColor Cyan
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-Write-Host ""
-Write-Host "--- terraform apply ---" -ForegroundColor Cyan
+# Crée les fichiers locaux via le provider local
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "--- Vérification des fichiers générés ---" -ForegroundColor Yellow
-Write-Host "Contenu de output/hello.txt :" -ForegroundColor Yellow
-Get-Content "output/hello.txt"
+# Vérifie les fichiers générés par le provider
+Get-Content output/hello.txt
+Get-Content output/config.json
+Get-Content output/inventory.ini
 
-Write-Host ""
-Write-Host "Contenu de output/config.json :" -ForegroundColor Yellow
-Get-Content "output/config.json"
-
-Write-Host ""
-Write-Host "Contenu de output/inventory.ini :" -ForegroundColor Yellow
-Get-Content "output/inventory.ini"
-
-Write-Host ""
-Write-Host "--- terraform output ---" -ForegroundColor Cyan
+# Affiche les outputs Terraform
 terraform output
 
-Write-Host ""
-Write-Host "--- terraform destroy (cleanup) ---" -ForegroundColor Cyan
+# Détruit toutes les ressources (supprime les fichiers créés)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

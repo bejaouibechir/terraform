@@ -1,87 +1,50 @@
-#!/bin/bash
-# ######################################################
-# Étude de Cas 4 : Provider Kubernetes
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Étude de Cas 4 - Provider Kubernetes
 # PRÉREQUIS :
 #   - minikube OU kind installé et démarré
-#   - kubectl configuré (fichier ~/.kube/config présent)
+#   - kubectl configuré (~/.kube/config présent)
 #
 # Démarrer minikube : minikube start
 # Démarrer kind     : kind create cluster --name terraform-demo
-# ######################################################
+# ============================================================
 
-set -e
+# Vérifie l'accès au cluster Kubernetes
+kubectl cluster-info
+kubectl get nodes
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-
-echo "======================================================"
-echo "  Étude de Cas 4 : Provider Kubernetes"
-echo "======================================================"
-
-echo ""
-echo "--- Vérification du cluster Kubernetes ---"
-if kubectl cluster-info > /dev/null 2>&1; then
-  echo "Cluster Kubernetes accessible !"
-  kubectl get nodes
-else
-  echo "ERREUR : Cluster Kubernetes non accessible."
-  echo "Démarrez minikube : minikube start"
-  echo "Ou kind           : kind create cluster --name terraform-demo"
-  exit 1
-fi
-
-echo ""
-echo "--- terraform init ---"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "--- terraform fmt && validate ---"
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "--- terraform plan ---"
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-echo ""
-echo "--- terraform apply ---"
+# Crée les ressources Kubernetes via Terraform
 terraform apply -auto-approve
 
-echo ""
-echo "--- terraform output ---"
+# Affiche les outputs Terraform
 terraform output
 
-echo ""
-echo "--- Vérification Kubernetes ---"
-echo "Namespace :"
+# Vérifie le namespace créé
 kubectl get namespace terraform-demo
 
-echo ""
-echo "Pods :"
+# Vérifie les pods déployés
 kubectl get pods -n terraform-demo
 
-echo ""
-echo "Services :"
+# Vérifie les services exposés
 kubectl get service -n terraform-demo
 
-echo ""
-echo "ConfigMap :"
+# Vérifie les ConfigMaps créées
 kubectl get configmap -n terraform-demo
 
-echo ""
-echo "--- Test d'accès (minikube) ---"
-if command -v minikube &> /dev/null; then
-  MINIKUBE_IP=$(minikube ip 2>/dev/null || echo "")
-  if [ -n "$MINIKUBE_IP" ]; then
-    echo "URL application : http://${MINIKUBE_IP}:30080"
-    curl -s -o /dev/null -w "HTTP Status : %{http_code}\n" "http://${MINIKUBE_IP}:30080" || true
-  fi
-fi
+# Affiche l'URL d'accès à l'application (minikube uniquement)
+minikube ip
 
-echo ""
-echo "--- terraform destroy (cleanup) ---"
+# Détruit toutes les ressources Kubernetes (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

@@ -1,56 +1,31 @@
-#!/bin/bash
-# ######################################################
-# Étude de Cas 1 : Provider local (hashicorp/local)
-# ######################################################
-# PRÉREQUIS : Terraform installé uniquement (aucun compte cloud requis)
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Étude de Cas 1 - Provider hashicorp/local
+# PRÉREQUIS : Terraform installé (aucun compte cloud requis)
+# ============================================================
 
-set -e
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-
-echo "======================================================"
-echo "  Étude de Cas 1 : Provider hashicorp/local"
-echo "======================================================"
-
-echo ""
-echo "--- terraform init ---"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "--- terraform fmt && validate ---"
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "--- terraform plan ---"
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-echo ""
-echo "--- terraform apply ---"
+# Crée les fichiers locaux via le provider local
 terraform apply -auto-approve
 
-echo ""
-echo "--- Vérification des fichiers générés ---"
-echo "Contenu de output/hello.txt :"
+# Vérifie les fichiers générés par le provider
 cat output/hello.txt
-
-echo ""
-echo "Contenu de output/config.json :"
 cat output/config.json
-
-echo ""
-echo "Contenu de output/inventory.ini :"
 cat output/inventory.ini
 
-echo ""
-echo "--- terraform outputs ---"
+# Affiche les outputs Terraform
 terraform output
 
-echo ""
-echo "--- terraform destroy (cleanup) ---"
+# Détruit toutes les ressources (supprime les fichiers créés)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

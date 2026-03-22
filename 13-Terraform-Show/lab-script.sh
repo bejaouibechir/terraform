@@ -1,62 +1,31 @@
-#!/bin/bash
-# ######################################################
-# Lab : 13 - Terraform Show
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 13 - Terraform Show
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "##################################################"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt"
-echo "##################################################"
+# Formate les fichiers .tf
 terraform fmt
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform validate"
-echo "##################################################"
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform plan -out=monplan.tfplan"
-echo "# Sauvegarde le plan dans un fichier"
-echo "##################################################"
+# Sauvegarde le plan dans un fichier binaire
 terraform plan -out=monplan.tfplan
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform show monplan.tfplan"
-echo "# Inspecte le fichier de plan avant apply"
-echo "##################################################"
+# Inspecte le fichier de plan en format lisible (avant apply)
 terraform show monplan.tfplan
 
-echo ""
-echo "##################################################"
-echo "# Step 6: terraform apply"
-echo "##################################################"
+# Crée les ressources
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 7: terraform show"
-echo "# Inspecte le state après apply"
-echo "##################################################"
+# Inspecte le state après apply (état réel de l'infrastructure)
 terraform show
 
-echo ""
-echo "##################################################"
-echo "# Step 8: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
 
-# Nettoyage du fichier de plan
+# Supprime le fichier de plan
 rm -f monplan.tfplan
-
-echo ""
-echo "Lab terminé avec succès !"

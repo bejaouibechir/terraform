@@ -1,44 +1,22 @@
-#!/bin/bash
-# ######################################################
-# Lab : 04 - Terraform Top Level Blocks
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 04 - Terraform Top Level Blocks
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "##################################################"
+# Initialise le répertoire Terraform (télécharge les providers)
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt"
-echo "##################################################"
+# Formate les fichiers .tf selon le style HashiCorp
 terraform fmt
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform validate"
-echo "##################################################"
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform plan"
-echo "##################################################"
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform apply"
-echo "##################################################"
+# Crée les ressources déclarées dans les fichiers .tf
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 6: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources créées (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

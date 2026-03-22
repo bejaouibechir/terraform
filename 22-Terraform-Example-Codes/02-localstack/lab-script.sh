@@ -1,70 +1,35 @@
-#!/bin/bash
-# ######################################################
-# Étude de Cas 2 : LocalStack — Simulateur AWS Local
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Étude de Cas 2 - LocalStack (Simulateur AWS Local)
 # PRÉREQUIS :
-#   - Docker Desktop démarré
-#   - LocalStack installé : pip install localstack
-#   - awslocal CLI (optionnel) : pip install awscli-local
-# ######################################################
+#   - Docker démarré
+#   - LocalStack en cours d'exécution : docker start localstack-main
+# ============================================================
 
-set -e
+# Vérifie que LocalStack est démarré et opérationnel
+curl -s http://localhost:4566/_localstack/health
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-
-echo "======================================================"
-echo "  Étude de Cas 2 : LocalStack — Simulateur AWS"
-echo "======================================================"
-
-echo ""
-echo "--- Vérification que LocalStack est démarré ---"
-if curl -s http://localhost:4566/_localstack/health > /dev/null 2>&1; then
-  echo "LocalStack est prêt !"
-else
-  echo "ATTENTION : LocalStack ne semble pas démarré."
-  echo "Lancez : localstack start -d"
-  echo "Puis relancez ce script."
-  exit 1
-fi
-
-echo ""
-echo "--- terraform init ---"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "--- terraform fmt && validate ---"
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "--- terraform plan ---"
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-echo ""
-echo "--- terraform apply ---"
+# Crée les ressources AWS simulées par LocalStack
 terraform apply -auto-approve
 
-echo ""
-echo "--- terraform output ---"
+# Affiche les outputs (IDs des ressources créées)
 terraform output
 
-echo ""
-echo "--- Vérification avec awslocal (si disponible) ---"
-if command -v awslocal &> /dev/null; then
-  echo "VPCs :"
-  awslocal ec2 describe-vpcs --output table
-  echo ""
-  echo "Buckets S3 :"
-  awslocal s3 ls
-else
-  echo "awslocal non installé — vérification via curl :"
-  curl -s "http://localhost:4566/tf-localstack-demo-bucket" | head -20
-fi
+# Vérifie les ressources créées via awslocal (pip install awscli-local)
+awslocal ec2 describe-vpcs --output table
+awslocal s3 ls
 
-echo ""
-echo "--- terraform destroy (cleanup) ---"
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

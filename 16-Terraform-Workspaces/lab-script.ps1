@@ -1,74 +1,55 @@
-# ######################################################
-# Lab : 16 - Terraform Workspaces
-# ######################################################
+# ============================================================
+# Lab 16 - Terraform Workspaces
+# ============================================================
 
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 1: terraform init" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Initialise le répertoire Terraform
 terraform init
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 2: terraform fmt && validate" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 3: Vérifier le workspace actif (default)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Affiche le workspace actif (default au départ)
 terraform workspace show
+
+# Liste tous les workspaces existants
 terraform workspace list
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 4: Créer et déployer le workspace DEV" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# ── Workspace DEV ────────────────────────────────────────────
+# Crée et bascule vers le workspace dev
 terraform workspace new dev
 terraform workspace show
 terraform plan
 terraform apply -auto-approve
 terraform output
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 5: Créer et déployer le workspace STAGING" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# ── Workspace STAGING ────────────────────────────────────────
+# Crée et bascule vers le workspace staging
 terraform workspace new staging
 terraform workspace show
 terraform plan
 terraform apply -auto-approve
 terraform output
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 6: Créer et déployer le workspace PROD" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# ── Workspace PROD ───────────────────────────────────────────
+# Crée et bascule vers le workspace prod
 terraform workspace new prod
 terraform workspace show
 terraform plan
 terraform apply -auto-approve
 terraform output
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 7: Lister tous les workspaces" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Liste tous les workspaces (dev, staging, prod, default)
 terraform workspace list
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 8: Basculer entre workspaces" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Bascule vers dev et affiche ses outputs
 terraform workspace select dev
 terraform workspace show
 terraform output
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 9: terraform destroy dans chaque workspace (cleanup)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# ── Nettoyage : destroy dans chaque workspace ────────────────
 terraform workspace select dev
 terraform destroy -auto-approve
 
@@ -78,15 +59,11 @@ terraform destroy -auto-approve
 terraform workspace select prod
 terraform destroy -auto-approve
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 10: Supprimer les workspaces et revenir à default" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Revient à default et supprime les workspaces créés
 terraform workspace select default
 terraform workspace delete dev
 terraform workspace delete staging
 terraform workspace delete prod
-terraform workspace list
 
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green
+# Vérifie qu'il ne reste que le workspace default
+terraform workspace list

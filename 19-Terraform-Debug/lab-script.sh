@@ -1,85 +1,45 @@
-#!/bin/bash
-# ######################################################
-# Lab : 19 - Terraform Debug
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 19 - Terraform Debug
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: Activer la journalisation TRACE"
-echo "##################################################"
+# Active la journalisation au niveau TRACE (très détaillé)
 export TF_LOG=TRACE
 export TF_LOG_PATH="terraform-trace.log"
-echo "TF_LOG=$TF_LOG"
-echo "TF_LOG_PATH=$TF_LOG_PATH"
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform init (logs TRACE générés)"
-echo "##################################################"
+# Génère des logs TRACE pendant l'initialisation
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform validate"
-echo "##################################################"
+# Génère des logs TRACE pendant la validation
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform plan"
-echo "##################################################"
+# Génère des logs TRACE pendant le plan
 terraform plan
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform apply"
-echo "##################################################"
+# Génère des logs TRACE pendant l'apply
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 6: Inspecter le fichier de log"
-echo "##################################################"
-echo "--- Nombre de lignes dans le log TRACE ---"
+# Affiche le nombre total de lignes dans le fichier de log
 wc -l terraform-trace.log
-echo ""
-echo "--- Aperçu des 20 premières lignes ---"
+
+# Affiche les 20 premières lignes du log
 head -20 terraform-trace.log
-echo ""
-echo "--- Recherche des appels API AWS ---"
+
+# Recherche les appels API dans les logs
 grep "POST\|GET\|PUT" terraform-trace.log | head -10
 
-echo ""
-echo "##################################################"
-echo "# Step 7: Changer le niveau de log à INFO"
-echo "##################################################"
+# Passe le niveau de log à INFO (moins verbeux que TRACE)
 export TF_LOG=INFO
-echo "TF_LOG=$TF_LOG"
 terraform refresh
 
-echo ""
-echo "##################################################"
-echo "# Step 8: Désactiver la journalisation"
-echo "##################################################"
+# Désactive complètement la journalisation
 unset TF_LOG
 unset TF_LOG_PATH
-echo "Journalisation désactivée."
 
-echo ""
-echo "##################################################"
-echo "# Step 9: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 10: Nettoyage des fichiers de log"
-echo "##################################################"
+# Supprime les fichiers générés pendant le lab
 rm -rf .terraform*
 rm -f terraform.tfstate*
 rm -f terraform-trace.log
-echo "Fichiers de log supprimés."
-
-echo ""
-echo "Lab terminé avec succès !"

@@ -1,69 +1,35 @@
-# ######################################################
-# Lab : 14 - Terraform Refresh
-# ######################################################
+# ============================================================
+# Lab 14 - Terraform Refresh
+# ============================================================
 
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 1: terraform init" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Initialise le répertoire Terraform
 terraform init
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 2: terraform fmt" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Formate les fichiers .tf
 terraform fmt
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 3: terraform validate" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 4: terraform plan" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 5: terraform apply" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Crée les ressources
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 6: terraform show (état avant refresh)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Inspecte le state AVANT refresh
 terraform show
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 7: terraform refresh" -ForegroundColor Cyan
-Write-Host "# NOTE : Ajoutez manuellement un tag sur le VPC depuis" -ForegroundColor Yellow
-Write-Host "#        la Console AWS avant cette étape pour observer" -ForegroundColor Yellow
-Write-Host "#        le comportement du refresh" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Synchronise le state avec l'infrastructure réelle
+# NOTE : pour observer le comportement, ajoutez manuellement un tag
+#        sur le VPC depuis la Console AWS avant cette commande
 terraform refresh
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 8: terraform show (état après refresh)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Inspecte le state APRÈS refresh (le nouveau tag doit apparaître)
 terraform show
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 9: terraform plan" -ForegroundColor Cyan
-Write-Host "# Vérifiez si des différences sont détectées" -ForegroundColor Yellow
-Write-Host "##################################################" -ForegroundColor Cyan
+# Vérifie si des différences sont détectées entre state et code
 terraform plan
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 10: terraform destroy (cleanup)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

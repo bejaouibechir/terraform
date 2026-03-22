@@ -1,53 +1,27 @@
-# ######################################################
-# Lab : 10 - Terraform Outputs
-# ######################################################
+# ============================================================
+# Lab 10 - Terraform Outputs
+# ============================================================
 
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 1: terraform init" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Initialise le répertoire Terraform
 terraform init
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 2: terraform fmt" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Formate les fichiers .tf
 terraform fmt
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 3: terraform validate" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 4: terraform plan" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 5: terraform apply" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Crée les ressources
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 6: terraform output - afficher tous les outputs" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Affiche tous les outputs définis dans outputs.tf
 terraform output
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 7: terraform output - afficher un output spécifique" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Affiche un output spécifique par son nom
 terraform output myec2_public_ip
 
-Write-Host ""
-Write-Host "##################################################" -ForegroundColor Cyan
-Write-Host "# Step 8: terraform destroy (cleanup)" -ForegroundColor Cyan
-Write-Host "##################################################" -ForegroundColor Cyan
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

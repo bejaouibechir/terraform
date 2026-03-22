@@ -1,56 +1,28 @@
-#!/bin/bash
-# ######################################################
-# Lab : 10 - Terraform Outputs
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 10 - Terraform Outputs
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "##################################################"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt"
-echo "##################################################"
+# Formate les fichiers .tf
 terraform fmt
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform validate"
-echo "##################################################"
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform plan"
-echo "##################################################"
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform apply"
-echo "##################################################"
+# Crée les ressources
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 6: terraform output - afficher tous les outputs"
-echo "##################################################"
+# Affiche tous les outputs définis dans outputs.tf
 terraform output
 
-echo ""
-echo "##################################################"
-echo "# Step 7: terraform output - afficher un output spécifique"
-echo "##################################################"
+# Affiche un output spécifique par son nom
 terraform output myec2_public_ip
 
-echo ""
-echo "##################################################"
-echo "# Step 8: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

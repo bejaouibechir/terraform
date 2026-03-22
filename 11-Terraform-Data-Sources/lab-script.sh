@@ -1,52 +1,25 @@
-#!/bin/bash
-# ######################################################
-# Lab : 11 - Terraform Data Sources
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 11 - Terraform Data Sources
+# ============================================================
 
-set -e
-
-echo "##################################################"
-echo "# Step 1: terraform init"
-echo "##################################################"
+# Initialise le répertoire Terraform
 terraform init
 
-echo ""
-echo "##################################################"
-echo "# Step 2: terraform fmt"
-echo "##################################################"
+# Formate les fichiers .tf
 terraform fmt
 
-echo ""
-echo "##################################################"
-echo "# Step 3: terraform validate"
-echo "##################################################"
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-echo ""
-echo "##################################################"
-echo "# Step 4: terraform plan"
-echo "# Observez l'ID AMI récupéré dynamiquement via la data source"
-echo "##################################################"
+# Dans le plan, observez l'ID AMI récupéré dynamiquement via la data source
 terraform plan
 
-echo ""
-echo "##################################################"
-echo "# Step 5: terraform apply"
-echo "##################################################"
+# Crée les ressources (l'AMI est résolue automatiquement)
 terraform apply -auto-approve
 
-echo ""
-echo "##################################################"
-echo "# Step 6: terraform show"
-echo "# Vérifiez l'AMI utilisée par l'instance EC2"
-echo "##################################################"
+# Vérifiez l'AMI utilisée par l'instance EC2 dans le state
 terraform show
 
-echo ""
-echo "##################################################"
-echo "# Step 7: terraform destroy (cleanup)"
-echo "##################################################"
+# Détruit toutes les ressources (nettoyage)
 terraform destroy -auto-approve
-
-echo ""
-echo "Lab terminé avec succès !"

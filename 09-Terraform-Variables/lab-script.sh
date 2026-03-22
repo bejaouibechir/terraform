@@ -1,57 +1,74 @@
-#!/bin/bash
-# ######################################################
-# Lab : 09 - Terraform Variables
-# Ce script itère sur chaque sous-lab indépendamment
-# ######################################################
+#!/usr/bin/env bash
+# ============================================================
+# Lab 09 - Terraform Variables
+# Exécuter depuis : 09-Terraform-Variables/
+# ============================================================
 
-run_lab() {
-  local dir=$1
-  local name=$2
-  local extra_args=${3:-""}
-  echo ""
-  echo "======================================================"
-  echo "  LAB : $name"
-  echo "  Répertoire : $dir"
-  echo "======================================================"
-  cd "$dir"
+# ── 09 : Variables (défaut) — répertoire courant ─────────────
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
 
-  echo "--- terraform init ---"
-  terraform init -upgrade
+# ── 09-01 : Variables via fichier .tfvars ────────────────────
+cd 09-01-Terraform-Variables-tfvars
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+cd ..
 
-  echo "--- terraform fmt ---"
-  terraform fmt
+# ── 09-02 : Variables via fichier var-file ───────────────────
+cd 09-02-Terraform-Variables-tfvars-var-file
+terraform init -upgrade
+terraform fmt
+terraform validate
+# Le fichier dev.tfvars est passé explicitement avec -var-file
+terraform plan -var-file=dev.tfvars
+terraform apply -auto-approve -var-file=dev.tfvars
+terraform destroy -auto-approve -var-file=dev.tfvars
+cd ..
 
-  echo "--- terraform validate ---"
-  terraform validate
+# ── 09-03 : Variables de type list ──────────────────────────
+cd 09-03-Terraform-Variables-list
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+cd ..
 
-  echo "--- terraform plan $extra_args ---"
-  eval "terraform plan $extra_args"
+# ── 09-04 : Variables de type map ───────────────────────────
+cd 09-04-Terraform-Variables-map
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+cd ..
 
-  echo "--- terraform apply $extra_args ---"
-  eval "terraform apply -auto-approve $extra_args"
+# ── 09-05 : Custom Validation Rules ─────────────────────────
+cd 09-05-Custom-Validation-Rules
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+cd ..
 
-  echo "--- terraform destroy $extra_args ---"
-  eval "terraform destroy -auto-approve $extra_args"
-
-  echo "Lab '$name' terminé."
-  cd - > /dev/null
-}
-
-BASEDIR="$(cd "$(dirname "$0")" && pwd)"
-
-# Lab principal - variables par défaut
-run_lab "$BASEDIR" "09 : Variables (défaut)"
-
-# Sous-labs
-run_lab "$BASEDIR/09-01-Terraform-Variables-tfvars"         "09-01 : Variables tfvars"
-run_lab "$BASEDIR/09-02-Terraform-Variables-tfvars-var-file" "09-02 : Variables var-file" \
-        "-var-file=dev.tfvars"
-run_lab "$BASEDIR/09-03-Terraform-Variables-list"           "09-03 : Variables list"
-run_lab "$BASEDIR/09-04-Terraform-Variables-map"            "09-04 : Variables map"
-run_lab "$BASEDIR/09-05-Custom-Validation-Rules"            "09-05 : Custom Validation Rules"
-run_lab "$BASEDIR/09-06-Sensitive-Variables"                "09-06 : Sensitive Variables"
-
-echo ""
-echo "======================================================"
-echo "  Tous les labs 09 terminés avec succès !"
-echo "======================================================"
+# ── 09-06 : Sensitive Variables ─────────────────────────────
+cd 09-06-Sensitive-Variables
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+cd ..

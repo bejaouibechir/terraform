@@ -1,63 +1,37 @@
-# ######################################################
-# Étude de Cas 3 : Provider Docker (kreuzwerker/docker)
-# ######################################################
-# PRÉREQUIS :
-#   - Docker Desktop installé et démarré
-# ######################################################
+# ============================================================
+# Étude de Cas 3 - Provider Docker (kreuzwerker/docker)
+# PRÉREQUIS : Docker Desktop installé et démarré
+# ============================================================
 
-Set-Location $PSScriptRoot
+# Vérifie que Docker est démarré
+docker info
 
-Write-Host "======================================================" -ForegroundColor Magenta
-Write-Host "  Étude de Cas 3 : Provider Docker" -ForegroundColor Magenta
-Write-Host "======================================================" -ForegroundColor Magenta
-
-Write-Host ""
-Write-Host "--- Vérification que Docker est démarré ---" -ForegroundColor Cyan
-$dockerInfo = docker info 2>&1
-if ($LASTEXITCODE -ne 0) {
-  Write-Host "ERREUR : Docker n'est pas démarré. Lancez Docker Desktop." -ForegroundColor Red
-  exit 1
-}
-Write-Host "Docker est prêt !" -ForegroundColor Green
-
-Write-Host ""
-Write-Host "--- terraform init ---" -ForegroundColor Cyan
+# Initialise le répertoire Terraform
 terraform init
 
-Write-Host ""
-Write-Host "--- terraform fmt && validate ---" -ForegroundColor Cyan
+# Formate les fichiers .tf
 terraform fmt
+
+# Vérifie la syntaxe des fichiers .tf
 terraform validate
 
-Write-Host ""
-Write-Host "--- terraform plan ---" -ForegroundColor Cyan
+# Calcule et affiche le plan de déploiement
 terraform plan
 
-Write-Host ""
-Write-Host "--- terraform apply ---" -ForegroundColor Cyan
+# Crée les conteneurs et le réseau Docker via Terraform
 terraform apply -auto-approve
 
-Write-Host ""
-Write-Host "--- terraform output ---" -ForegroundColor Cyan
+# Affiche les outputs (ports, noms des conteneurs)
 terraform output
 
-Write-Host ""
-Write-Host "--- Vérification des conteneurs Docker ---" -ForegroundColor Yellow
+# Liste les conteneurs gérés par Terraform
 docker ps --filter "label=managed-by=terraform" --format "table {{.Names}}`t{{.Image}}`t{{.Status}}`t{{.Ports}}"
 
-Write-Host ""
-Write-Host "--- Test de Nginx ---" -ForegroundColor Yellow
-Start-Sleep -Seconds 2
-try {
-  $response = Invoke-WebRequest -Uri "http://localhost:8080" -UseBasicParsing
-  Write-Host "Nginx HTTP Status : $($response.StatusCode)" -ForegroundColor Green
-} catch {
-  Write-Host "Nginx non accessible : $_" -ForegroundColor Yellow
-}
+# Teste l'accès à Nginx (HTTP 200 attendu)
+Invoke-WebRequest -Uri http://localhost:8080 -UseBasicParsing
 
-Write-Host ""
-Write-Host "--- terraform destroy (cleanup) ---" -ForegroundColor Cyan
+# Vérifie le réseau Docker créé par Terraform
+docker network inspect terraform-network
+
+# Détruit tous les conteneurs et le réseau (nettoyage)
 terraform destroy -auto-approve
-
-Write-Host ""
-Write-Host "Lab terminé avec succès !" -ForegroundColor Green

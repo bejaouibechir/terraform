@@ -1,55 +1,73 @@
-# ######################################################
-# Lab : 09 - Terraform Variables
-# Ce script itère sur chaque sous-lab indépendamment
-# ######################################################
+# ============================================================
+# Lab 09 - Terraform Variables
+# Exécuter depuis : 09-Terraform-Variables\
+# ============================================================
 
-function Run-Lab {
-  param(
-    [string]$Dir,
-    [string]$Name,
-    [string]$ExtraArgs = ""
-  )
-  Write-Host ""
-  Write-Host "======================================================" -ForegroundColor Magenta
-  Write-Host "  LAB : $Name" -ForegroundColor Magenta
-  Write-Host "  Répertoire : $Dir" -ForegroundColor Magenta
-  Write-Host "======================================================" -ForegroundColor Magenta
+# ── 09 : Variables (défaut) — répertoire courant ─────────────
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
 
-  Set-Location $Dir
+# ── 09-01 : Variables via fichier .tfvars ────────────────────
+Set-Location 09-01-Terraform-Variables-tfvars
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+Set-Location ..
 
-  Write-Host "--- terraform init ---" -ForegroundColor Cyan
-  terraform init -upgrade
+# ── 09-02 : Variables via fichier var-file ───────────────────
+Set-Location 09-02-Terraform-Variables-tfvars-var-file
+terraform init -upgrade
+terraform fmt
+terraform validate
+# Le fichier dev.tfvars est passé explicitement avec -var-file
+terraform plan -var-file=dev.tfvars
+terraform apply -auto-approve -var-file=dev.tfvars
+terraform destroy -auto-approve -var-file=dev.tfvars
+Set-Location ..
 
-  Write-Host "--- terraform fmt ---" -ForegroundColor Cyan
-  terraform fmt
+# ── 09-03 : Variables de type list ──────────────────────────
+Set-Location 09-03-Terraform-Variables-list
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+Set-Location ..
 
-  Write-Host "--- terraform validate ---" -ForegroundColor Cyan
-  terraform validate
+# ── 09-04 : Variables de type map ───────────────────────────
+Set-Location 09-04-Terraform-Variables-map
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+Set-Location ..
 
-  Write-Host "--- terraform plan $ExtraArgs ---" -ForegroundColor Cyan
-  Invoke-Expression "terraform plan $ExtraArgs"
+# ── 09-05 : Custom Validation Rules ─────────────────────────
+Set-Location 09-05-Custom-Validation-Rules
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+Set-Location ..
 
-  Write-Host "--- terraform apply $ExtraArgs ---" -ForegroundColor Cyan
-  Invoke-Expression "terraform apply -auto-approve $ExtraArgs"
-
-  Write-Host "--- terraform destroy $ExtraArgs ---" -ForegroundColor Cyan
-  Invoke-Expression "terraform destroy -auto-approve $ExtraArgs"
-
-  Write-Host "Lab '$Name' terminé." -ForegroundColor Green
-  Set-Location $PSScriptRoot
-}
-
-$BaseDir = $PSScriptRoot
-
-Run-Lab "$BaseDir"                                            "09 : Variables (défaut)"
-Run-Lab "$BaseDir\09-01-Terraform-Variables-tfvars"          "09-01 : Variables tfvars"
-Run-Lab "$BaseDir\09-02-Terraform-Variables-tfvars-var-file" "09-02 : Variables var-file" "-var-file=dev.tfvars"
-Run-Lab "$BaseDir\09-03-Terraform-Variables-list"            "09-03 : Variables list"
-Run-Lab "$BaseDir\09-04-Terraform-Variables-map"             "09-04 : Variables map"
-Run-Lab "$BaseDir\09-05-Custom-Validation-Rules"             "09-05 : Custom Validation Rules"
-Run-Lab "$BaseDir\09-06-Sensitive-Variables"                 "09-06 : Sensitive Variables"
-
-Write-Host ""
-Write-Host "======================================================" -ForegroundColor Magenta
-Write-Host "  Tous les labs 09 terminés avec succès !" -ForegroundColor Magenta
-Write-Host "======================================================" -ForegroundColor Magenta
+# ── 09-06 : Sensitive Variables ─────────────────────────────
+Set-Location 09-06-Sensitive-Variables
+terraform init -upgrade
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-approve
+terraform destroy -auto-approve
+Set-Location ..
