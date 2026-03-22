@@ -1,7 +1,3 @@
-resource "aws_vpc" "myvpc" {
-  cidr_block = "10.0.0.0/16"
-
-  tags = {
-    Name = "MyVPC"
-  }
-}
+# Ce fichier a été remplacé par 02_resources.tf
+# Les ressources sont maintenant définies dans 02_resources.tf
+# en utilisant les providers légers : local, random (sans credentials AWS)

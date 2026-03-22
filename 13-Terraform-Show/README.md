@@ -1,5 +1,7 @@
 # Commande Terraform Show
 
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
+
 ## Commande *`terraform show`*
 
 - La commande *`terraform show`* est utilisée pour **afficher une représentation lisible par l'humain du state Terraform ou d'un fichier de plan**.
@@ -13,7 +15,7 @@
 
 **Syntaxe** :
 
-```hcl
+```shell
 # Afficher le state courant
 terraform show
 
@@ -21,152 +23,248 @@ terraform show
 terraform show <fichier-plan>
 ```
 
-**Exemple** :
+## Exemple Pratique
 
-- Créons un VPC simple et utilisons la commande `terraform show` pour inspecter son état
+Ce module crée un nom aléatoire (`random_pet`), un ID hexadécimal (`random_id`) et un fichier de configuration JSON (`local_file`), puis démontre l'utilisation de `terraform show` pour inspecter l'état.
+
+### Structure des Fichiers
+
+```
+13-Terraform-Show/
+├── 00_provider.tf
+├── 01_variables.tf
+├── 02_resources.tf
+├── 03_outputs.tf
+└── output/
+    └── infra.json    (créé par Terraform)
+```
 
 [00_provider.tf](./00_provider.tf)
 
 ```hcl
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
   }
 }
 
-provider "aws" {
-  region = var.aws_region
-
-  default_tags {
-    tags = {
-      Terraform = "yes"
-      Owner     = var.owner
-    }
-  }
-}
+provider "random" {}
+provider "local" {}
 ```
 
 [01_variables.tf](./01_variables.tf)
 
 ```hcl
-variable "aws_region" {
-  description = "Région AWS dans laquelle les resources seront créées"
+variable "environment" {
+  description = "Nom de l'environnement"
   type        = string
-  default     = "us-east-1"
+  default     = "dev"
 }
 
 variable "owner" {
-  description = "Nom de l'ingénieur qui crée les resources"
+  description = "Nom de l'ingénieur responsable"
   type        = string
   default     = "Venkatesh"
 }
 ```
 
-[02_vpc.tf](./02_vpc.tf)
+[02_resources.tf](./02_resources.tf)
 
 ```hcl
-resource "aws_vpc" "myvpc" {
-  cidr_block = "10.0.0.0/16"
+resource "random_pet" "name" {
+  length = 2
+  prefix = var.environment
+}
 
-  tags = {
-    Name = "MyVPC"
-  }
+resource "random_id" "id" {
+  byte_length = 4
+}
+
+resource "local_file" "config" {
+  filename = "${path.module}/output/infra.json"
+  content = jsonencode({
+    name        = random_pet.name.id
+    id          = random_id.id.hex
+    environment = var.environment
+    owner       = var.owner
+  })
 }
 ```
 
-- Dans l'exemple ci-dessus, nous créons un VPC simple et observons la sortie de `terraform show`
+[03_outputs.tf](./03_outputs.tf)
 
-- Exécutons les commandes Terraform pour comprendre le comportement de `terraform show`
-  
-  1. ***`terraform init`*** : *Initialiser* Terraform
-  2. ***`terraform validate`*** : *Valider* le code Terraform
-  3. ***`terraform fmt`*** : *Formater* le code Terraform
-  4. ***`terraform plan`*** : *Réviser* le plan Terraform
-  5. ***`terraform apply`*** : *Créer* des Resources avec Terraform
-  6. ***`terraform show`*** : *Inspecter* l'état courant de l'infrastructure
+```hcl
+output "resource_name" {
+  description = "Nom de la ressource générée"
+  value       = random_pet.name.id
+}
 
-- Après l'exécution de *`terraform apply`*, utilisez *`terraform show`* pour inspecter le state courant :
-  
-  ```hcl
-  $ terraform show
-  # aws_vpc.myvpc:
-  resource "aws_vpc" "myvpc" {
-      arn                                  = "arn:aws:ec2:us-east-1:520974589522:vpc/vpc-0ab12cd34ef567890"
-      assign_generated_ipv6_cidr_block     = false
-      cidr_block                           = "10.0.0.0/16"
-      default_network_acl_id               = "acl-0a1b2c3d4e5f67890"
-      default_route_table_id               = "rtb-0a1b2c3d4e5f67890"
-      default_security_group_id            = "sg-0a1b2c3d4e5f67890"
-      dhcp_options_id                      = "dopt-7c9cef04"
-      enable_dns_hostnames                 = false
-      enable_dns_support                   = true
-      enable_network_address_usage_metrics = false
-      id                                   = "vpc-0ab12cd34ef567890"
-      instance_tenancy                     = "default"
-      ipv6_netmask_length                  = 0
-      main_route_table_id                  = "rtb-0a1b2c3d4e5f67890"
-      owner_id                             = "520974589522"
-      tags                                 = {
-          "Name" = "MyVPC"
-      }
-      tags_all                             = {
-          "Name"      = "MyVPC"
-          "Owner"     = "Venkatesh"
-          "Terraform" = "yes"
-      }
-  }
-  ```
+output "resource_id" {
+  description = "ID unique de la ressource"
+  value       = random_id.id.hex
+}
 
-- Vous pouvez également générer un fichier de plan et l'inspecter avec *`terraform show`* :
-  
-  ```hcl
-  # Générer un fichier de plan
-  terraform plan -out=monplan.tfplan
-  
-  # Inspecter le fichier de plan
-  terraform show monplan.tfplan
-  ```
-  
-  <details>
-  <summary> <i>terraform show monplan.tfplan</i> </summary>
-  
-  ```hcl
-  $ terraform show monplan.tfplan
-  
-  Terraform used the selected providers to generate the following execution plan.
-  Resource actions are indicated with the following symbols:
-    + create
-  
-  Terraform will perform the following actions:
-  
-  # aws_vpc.myvpc will be created
-  + resource "aws_vpc" "myvpc" {
-      + arn                                  = (known after apply)
-      + cidr_block                           = "10.0.0.0/16"
-      + default_network_acl_id               = (known after apply)
-      + default_route_table_id               = (known after apply)
-      + default_security_group_id            = (known after apply)
-      + enable_dns_support                   = true
-      + id                                   = (known after apply)
-      + instance_tenancy                     = "default"
-      + tags                                 = {
-          + "Name" = "MyVPC"
-        }
-      + tags_all                             = {
-          + "Name"      = "MyVPC"
-          + "Owner"     = "Venkatesh"
-          + "Terraform" = "yes"
-        }
+output "config_path" {
+  description = "Chemin du fichier de configuration"
+  value       = local_file.config.filename
+}
+```
+
+## Exécution Pas à Pas
+
+1. ***`terraform init`*** : *Initialiser* Terraform
+2. ***`terraform validate`*** : *Valider* le code Terraform
+3. ***`terraform fmt`*** : *Formater* le code Terraform
+4. ***`terraform plan`*** : *Réviser* le plan Terraform
+5. ***`terraform apply`*** : *Créer* les Resources
+6. ***`terraform show`*** : *Inspecter* l'état courant
+
+<details>
+<summary><i>terraform apply</i></summary>
+
+```shell
+$ terraform apply -auto-approve
+
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # random_id.id will be created
+  + resource "random_id" "id" {
+      + byte_length = 4
+      + hex         = (known after apply)
+      + id          = (known after apply)
     }
-  
-  Plan: 1 to add, 0 to change, 0 to destroy.
-  ```
-  
-  </details>
+
+  # random_pet.name will be created
+  + resource "random_pet" "name" {
+      + id     = (known after apply)
+      + length = 2
+      + prefix = "dev"
+    }
+
+  # local_file.config will be created
+  + resource "local_file" "config" {
+      + filename = "./output/infra.json"
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+random_id.id: Creating...
+random_id.id: Creation complete after 0s [id=c4a1e37f]
+random_pet.name: Creating...
+random_pet.name: Creation complete after 0s [id=dev-noble-crane]
+local_file.config: Creating...
+local_file.config: Creation complete after 0s [id=...]
+
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+config_path   = "./output/infra.json"
+resource_id   = "c4a1e37f"
+resource_name = "dev-noble-crane"
+```
+
+</details>
+
+### Utilisation de `terraform show`
+
+Après l'apply, exécutez `terraform show` pour inspecter le state courant :
+
+```shell
+$ terraform show
+
+# local_file.config:
+resource "local_file" "config" {
+    content              = jsonencode(...)
+    directory_permission = "0777"
+    file_permission      = "0777"
+    filename             = "./output/infra.json"
+    id                   = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+}
+
+# random_id.id:
+resource "random_id" "id" {
+    b64_std     = "xKHjfw=="
+    b64_url     = "xKHjfw"
+    byte_length = 4
+    dec         = "3300435839"
+    hex         = "c4a1e37f"
+    id          = "xKHjfw"
+}
+
+# random_pet.name:
+resource "random_pet" "name" {
+    id        = "dev-noble-crane"
+    length    = 2
+    prefix    = "dev"
+    separator = "-"
+}
+```
+
+### Générer et inspecter un fichier de plan
+
+```shell
+# Générer un fichier de plan
+terraform plan -out=monplan.tfplan
+
+# Inspecter le fichier de plan
+terraform show monplan.tfplan
+```
+
+<details>
+<summary><i>terraform show monplan.tfplan</i></summary>
+
+```shell
+$ terraform show monplan.tfplan
+
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # random_id.id will be created
+  + resource "random_id" "id" {
+      + byte_length = 4
+      + hex         = (known after apply)
+    }
+
+  # random_pet.name will be created
+  + resource "random_pet" "name" {
+      + id     = (known after apply)
+      + length = 2
+      + prefix = "dev"
+    }
+
+  # local_file.config will be created
+  + resource "local_file" "config" {
+      + filename = "./output/infra.json"
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+```
+
+</details>
+
+### Nettoyage
+
+```shell
+terraform destroy -auto-approve
+```
 
 ## Références :
 
-Terraform Show : https://developer.hashicorp.com/terraform/cli/commands/show
+- [Terraform Show](https://developer.hashicorp.com/terraform/cli/commands/show)
+- [Provider random](https://registry.terraform.io/providers/hashicorp/random/latest/docs)
+- [Provider local](https://registry.terraform.io/providers/hashicorp/local/latest/docs)

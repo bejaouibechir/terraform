@@ -1,181 +1,165 @@
-# Variables Terraform
+# Variables Terraform — Type `list(string)`
 
-## Implémenter le type de variable `list`
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
 
+## Variables de type `list`
 
-Dans Terraform, vous pouvez utiliser des constructeurs de types complexes comme list et map pour définir des variables.
+Dans Terraform, vous pouvez utiliser des constructeurs de types complexes comme `list` et `map` pour définir des variables.
 
-- **list (ou tuple)** : une **séquence de valeurs**, comme ["t2.micro", "t2.small"].
-- Les éléments d'une list ou d'un tuple sont identifiés par des nombres entiers consécutifs, commençant à zéro. [0], [1]
+- **`list` (ou `tuple`)** : une **séquence ordonnée de valeurs**, comme `["web-01", "web-02", "api-01"]`.
+- Les éléments d'une list sont identifiés par des entiers consécutifs à partir de zéro : `[0]`, `[1]`, `[2]`.
+- Pour itérer sur une liste avec `for_each`, il faut d'abord la convertir en `set` avec la fonction `toset()`.
 
+---
 
-Considérons la variable `ec2_instance_type` comme exemple et implémentons la fonction List
+## Fichiers du lab
 
-### Définition Précédente :
+**`00_provider.tf`**
 
 ```hcl
-variable "ec2_instance_type" {
-    description = "Type d'instance EC2"
-    type        = string
-    default     = "t2.micro"
+terraform {
+  required_providers {
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
+provider "local" {}
+provider "random" {}
+```
+
+**`02_variables.tf`**
+
+```hcl
+variable "environment" {
+  type    = string
+  default = "dev"
+}
+
+variable "server_names" {
+  description = "Liste des noms de serveurs"
+  type        = list(string)
+  default     = ["web-01", "web-02", "api-01"]
 }
 ```
 
-Pour utiliser une list comme constructeur de type complexe pour *instance_type*, vous pouvez la modifier ainsi :
-### Type *list*
+`server_names` est déclarée de type `list(string)`. La valeur par défaut contient trois noms de serveurs. Chaque élément est accessible par son index :
 
 ```hcl
-variable "ec2_instance_type" {
-    description = "Types d'instances EC2"
-    type        = list(string)
-    default     = ["t2.micro", "t2.small", "t2.large"]
+var.server_names[0]  # → "web-01"
+var.server_names[1]  # → "web-02"
+var.server_names[2]  # → "api-01"
+```
+
+**`01_ec2.tf`**
+
+```hcl
+# Variable de type list — for_each sur une liste de serveurs
+resource "local_file" "server" {
+  for_each = toset(var.server_names)
+  filename = "${path.module}/output/${each.key}.conf"
+  content  = "SERVER=${each.key}\nENV=${var.environment}"
+}
+
+output "server_files" {
+  value = { for k, v in local_file.server : k => v.filename }
 }
 ```
 
-Voici ce qui a changé :
+---
 
-- **Déclaration de Type (type)** : Il est maintenant spécifié comme *`list(string)`*, indiquant que la variable est attendue comme une *`list`* de chaînes de caractères.
+## Explication de `for_each = toset(var.server_names)`
 
-- **Valeur par Défaut (default)** : La valeur par défaut est maintenant spécifiée comme *`["t2.micro", "t2.small", "t2.large"]`*, indiquant que par défaut, c'est une list contenant trois éléments de type string, soit *element[0]="t2.micro", element[1]="t2.small" et element[2]="t2.large"*.
+`for_each` attend un `set` ou une `map`, pas une `list`. La fonction **`toset()`** convertit la liste en ensemble (set), éliminant les doublons éventuels.
 
-- Pour utiliser cette variable de type list dans [01_ec2.tf](./01_ec2.tf), vous devrez l'appeler avec la syntaxe suivante
+| Étape | Valeur |
+| ----- | ------ |
+| `var.server_names` (list) | `["web-01", "web-02", "api-01"]` |
+| `toset(var.server_names)` (set) | `{"api-01", "web-01", "web-02"}` |
+| `each.key` dans la boucle | `"api-01"`, `"web-01"`, `"web-02"` |
 
-    ```hcl
-    instance_type = var.ec2_instance_type[0] # pour t2.micro
-    instance_type = var.ec2_instance_type[1] # pour t2.small
-    instance_type = var.ec2_instance_type[2] # pour t2.large
-    ```
+Pour chaque élément du set, Terraform crée une instance de `local_file` indépendante, identifiée par `each.key` (le nom du serveur).
 
-- **Exemple** :
+---
 
-    [00_provider.tf](./00_provider.tf)
-    ```hcl
-    terraform {
-    required_providers {
-        aws = {
-        source  = "hashicorp/aws"
-        version = "~> 5.0"
-        }
-    }
-    }
+## Résultat : fichiers générés
 
-    provider "aws" {
-    #region = "us-east-1"
-    region = var.aws_region
+Avec la valeur par défaut `["web-01", "web-02", "api-01"]`, Terraform crée trois fichiers :
 
-    default_tags {
-        tags = {
-        Terraform = "yes"
-        #Owner = "Venkatesh"
-        Owner = var.owner
-        }
-    }
-    }
-    ```
+```
+output/api-01.conf
+output/web-01.conf
+output/web-02.conf
+```
 
-    [01_ec2.tf](./01_ec2.tf)
-    ```hcl
-    resource "aws_instance" "myec2" {
-    # arguments terraform sans variables
-    # ami = "ami-0df435f331839b2d6"
-    # instance_type = "t2.micro"
-    # count = 1
+Chaque fichier contient par exemple :
 
-    # utilisation de variables pour les arguments
-    ami           = var.ec2_ami
-    instance_type = var.ec2_instance_type[1]
-    count         = var.instance_count
+```
+SERVER=web-01
+ENV=dev
+```
 
-    tags = {
-        Name = "Linux2023"
-        env  = var.env
-    }
-    }
-    ```
+---
 
-    [02_variables.tf](./02_variables.tf)
+## Output
 
-    ```hcl
-    variable "aws_region" {
-    description = "Région AWS dans laquelle les resources seront créées"
-    type        = string
-    default     = "us-east-1"
-    }
+```hcl
+output "server_files" {
+  value = { for k, v in local_file.server : k => v.filename }
+}
+```
 
-    variable "owner" {
-    description = "Nom de l'ingénieur qui crée les resources"
-    type        = string
-    default     = "Venkatesh"
-    }
+Cet output produit une map associant chaque nom de serveur à son chemin de fichier :
 
-    variable "ec2_ami" {
-    description = "AMI EC2 AWS Amazon Linux 2023"
-    type        = string
-    default     = "ami-0df435f331839b2d6" # Amazon Linux 2023
-    }
+```
+server_files = {
+  "api-01" = "./output/api-01.conf"
+  "web-01" = "./output/web-01.conf"
+  "web-02" = "./output/web-02.conf"
+}
+```
 
-    variable "ec2_instance_type" {
-    description = "Type d'instance EC2"
-    type        = list(string)
-    default     = ["t2.micro", "t2.small", "t2.large"]
-    }
+---
 
-    variable "instance_count" {
-    description = "Nombre d'instances EC2"
-    type        = number
-    default     = 1
-    }
+## Surcharger la liste
 
-    variable "env" {
-    description = "Type d'environnement"
-    type        = string
-    default     = "dev"
-    }
-    ```
+Via la ligne de commande :
 
+```bash
+terraform plan -var='server_names=["db-01","cache-01"]'
+```
 
-- Dans l'exemple ci-dessus, nous avons défini six variables :
-    1. `aws_region` : région AWS par défaut à utiliser
-    2. `owner` : Nom de l'ingénieur qui crée les resources
-    3. `ec2_ami` : AMI EC2 AWS
-    4. `ec2_instance_type` : **List** de types d'instances EC2 AWS
-    5. `instance_count` : Nombre d'instances EC2 à créer
-    6. `env` : Type d'environnement (PRE, PRD, DEV, UAT)
+Via `terraform.tfvars` :
 
+```hcl
+server_names = ["frontend", "backend", "worker"]
+environment  = "staging"
+```
 
-- Sortie de ***`terraform plan`*** pour ***`var.ec2_instance_type[1] (pour t2.small)`*** :
-    - Vous pouvez constater le changement d'`instance_type` à *t2.small* lorsque `var.ec2_instance_type[1]` est utilisé.
+---
 
-        ```hcl
-        $ terraform plan
+## Commandes Terraform
 
-        Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
-        + create
+```bash
+terraform init
+terraform validate
+terraform fmt
+terraform plan
+terraform apply     # confirmer avec yes
+terraform destroy   # confirmer avec yes
+```
 
-        Terraform will perform the following actions:
+---
 
-        # aws_instance.myec2[0] will be created
-        + resource "aws_instance" "myec2" {
-            + ami                                  = "ami-0df435f331839b2d6"
-            ...
-            + instance_type                        = "t2.small"
-            ...
-            + tags                                 = {
-                + "Name" = "Linux2023"
-                + "env"  = "dev"
-                }
-            ...
-            }
+## Références
 
-        Plan: 1 to add, 0 to change, 0 to destroy.
-        ```
-- De même, si vous passez `var.ec2_instance_type[0]` ou `var.ec2_instance_type[2]`, l'`instance_type` sera respectivement *t2.micro* et *t2.large*
-
-
-
-## Références :
-
-[Types et Valeurs](https://developer.hashicorp.com/terraform/language/expressions/types)
-
-[Contraintes de Type *list*](https://developer.hashicorp.com/terraform/language/values/variables#list)
-
+- [Types et Valeurs](https://developer.hashicorp.com/terraform/language/expressions/types)
+- [Contraintes de type `list`](https://developer.hashicorp.com/terraform/language/values/variables#list)
+- [Fonction `toset()`](https://developer.hashicorp.com/terraform/language/functions/toset)
+- [`for_each` avec des sets](https://developer.hashicorp.com/terraform/language/meta-arguments/for_each)

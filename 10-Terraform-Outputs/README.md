@@ -1,218 +1,266 @@
-## Outputs Terraform
+# Outputs Terraform
+
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
 
 - Dans Terraform, les outputs vous permettent d'**exposer des informations sur votre infrastructure déployée**.
 - Les outputs sont utiles pour **obtenir des informations sur votre infrastructure dont vous pourriez avoir besoin ultérieurement**.
 - Les valeurs de sortie **peuvent être utilisées comme entrée pour d'autres configurations ou scripts Terraform**.
 - Les outputs sont également utiles pour **partager des informations avec votre équipe ou des processus externes**.
 - Vous **pouvez définir plusieurs outputs** dans une seule configuration Terraform pour obtenir différentes informations.
-- Les outputs sont pratiques lorsque vous avez besoin de **connaître les détails de votre infrastructure, comme les adresses IP, les IDs d'instances ou les noms DNS**.
 - Vous pouvez utiliser un bloc ***`output`*** pour spécifier quelles informations vous souhaitez extraire.
-
-![](C:\Users\DELL\Desktop\terraform-beginners-guide\10-Terraform-Outputs\imgs\outputs-concept.jpg)
 
 **Syntaxe** :
 
 ```hcl
 output "nom_local" {
-value = type_resource.nom_resource.attribute_ou_argument
+  description = "Description de la valeur exposée"
+  value       = type_resource.nom_resource.attribut
 }
 ```
 
-**Exemple** :
+## Types d'Outputs
+
+| Type | Exemple | Description |
+|------|---------|-------------|
+| **string** | `random_pet.server_name.id` | Chaîne de caractères simple |
+| **number** | `random_integer.port.result` | Valeur numérique |
+| **string interpolé** | `"http://${...}:${...}"` | URL construite par interpolation |
+| **sensitive** | `random_password.api_key.result` | Valeur masquée dans les logs |
+| **string multi-lignes** | `tls_private_key.ssh_key.public_key_openssh` | Clé publique SSH |
+| **objet** | `{ name = ..., port = ..., ... }` | Structure de données complexe |
+
+## Exemple Pratique
+
+### Structure des Fichiers
+
+```
+10-Terraform-Outputs/
+├── 00_provider.tf
+├── 01_resources.tf
+├── 02_variables.tf
+├── 03_outputs.tf
+└── output/
+    └── connection.txt    (créé par Terraform)
+```
 
 [00_provider.tf](./00_provider.tf)
 
 ```hcl
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
   }
 }
 
-provider "aws" {
-  region = var.aws_region
-
-  default_tags {
-    tags = {
-      Terraform = "yes"
-      Owner     = var.owner
-    }
-  }
-}
+provider "random" {}
+provider "tls" {}
+provider "local" {}
 ```
 
-[01_ec2.tf](./01_ec2.tf)
+[01_resources.tf](./01_resources.tf)
 
 ```hcl
-resource "aws_instance" "myec2" {
-  ami           = var.ec2_ami
-  instance_type = var.ec2_instance_type
-  user_data     = <<EOF
-  #!/bin/bash
-  sudo yum update -y
-  sudo yum install httpd -y
-  sudo systemctl enable httpd
-  sudo systemctl start httpd
-  echo "<html><body><div><h1><center> Bonjour ! Cette Infrastructure AWS est déployée via Terraform ! </center></h1></div></body></html>" | sudo tee /var/www/html/index
-  EOF
+resource "random_pet" "server_name" {
+  length = 2
+  prefix = "srv"
+}
 
-  tags = {
-    Name = "Linux2023"
-  }
+resource "random_integer" "port" {
+  min = 8000
+  max = 9000
+}
+
+resource "random_password" "api_key" {
+  length  = 32
+  special = false
+}
+
+# Génération d'une clé TLS — démontre un output de type objet complexe
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "local_file" "connection_info" {
+  filename = "${path.module}/output/connection.txt"
+  content  = <<-EOT
+    Serveur  : ${random_pet.server_name.id}
+    Port     : ${random_integer.port.result}
+    Endpoint : http://${random_pet.server_name.id}:${random_integer.port.result}
+  EOT
 }
 ```
 
 [02_variables.tf](./02_variables.tf)
 
 ```hcl
-variable "aws_region" {
-  description = "Région AWS dans laquelle les resources seront créées"
+variable "environment" {
+  description = "Nom de l'environnement"
   type        = string
-  default     = "us-east-1"
+  default     = "dev"
 }
 
 variable "owner" {
-  description = "Nom de l'ingénieur qui crée les resources"
+  description = "Nom de l'ingénieur responsable"
   type        = string
   default     = "Venkatesh"
-}
-
-variable "ec2_ami" {
-  description = "AMI EC2 AWS Amazon Linux 2023"
-  type        = string
-  default     = "ami-0df435f331839b2d6" # Amazon Linux 2023
-}
-
-variable "ec2_instance_type" {
-  description = "Type d'instance EC2"
-  type        = string
-  default     = "t2.micro"
 }
 ```
 
 [03_outputs.tf](./03_outputs.tf)
 
 ```hcl
-output "myec2_public_ip" {
-  description = "IP Publique de l'Instance EC2"
-  value       = aws_instance.myec2.public_ip
+# Output simple — string
+output "server_name" {
+  description = "Nom du serveur généré"
+  value       = random_pet.server_name.id
 }
 
-output "myec2_private_ip" {
-  description = "IP Privée de l'Instance EC2"
-  value       = aws_instance.myec2.private_ip
+# Output numérique
+output "server_port" {
+  description = "Port d'écoute du serveur"
+  value       = random_integer.port.result
 }
 
-output "myec2_tags" {
-  description = "Tags de l'Instance EC2"
-  value       = aws_instance.myec2.tags
+# Output construit (interpolation)
+output "server_endpoint" {
+  description = "URL complète du serveur"
+  value       = "http://${random_pet.server_name.id}:${random_integer.port.result}"
 }
 
-output "myec2_public_dns" {
-  description = "DNS Public"
-  value       = "http://${aws_instance.myec2.public_dns}"
+# Output sensible — masqué dans les logs terraform apply
+output "api_key" {
+  description = "Clé API générée (sensible — masquée dans les logs)"
+  value       = random_password.api_key.result
+  sensitive   = true
+}
+
+# Output de type string multi-lignes (clé publique SSH)
+output "ssh_public_key" {
+  description = "Clé publique SSH générée par le provider TLS"
+  value       = tls_private_key.ssh_key.public_key_openssh
+}
+
+# Output de type objet
+output "server_info" {
+  description = "Informations complètes du serveur (objet)"
+  value = {
+    name        = random_pet.server_name.id
+    port        = random_integer.port.result
+    environment = var.environment
+    owner       = var.owner
+  }
 }
 ```
 
-- Dans l'exemple ci-dessus, nous avons défini quatre Outputs qui seront affichés lors du *`terraform plan`* ou du *`terraform apply`* :
-    1\. `myec2_public_ip` : IP Publique de l'Instance EC2
-    2\. `myec2_private_ip` : IP Privée de l'Instance EC2
-    3\. `myec2_tags` : Tags de l'Instance EC2
-    4\. `myec2_public_dns` : DNS Public de l'Instance EC2
+## Exécution Pas à Pas
 
-- Exécutons les commandes Terraform pour comprendre le comportement des resources
-  
-  1. ***`terraform init`*** : *Initialiser* terraform
-  
-  2. ***`terraform validate`*** : *Valider* le code terraform
-  
-  3. ***`terraform fmt`*** : *Formater* le code terraform
-  
-  4. ***`terraform plan`*** : *Réviser* le plan terraform
-  
-  5. ***`terraform apply`*** : *Créer* des Resources avec terraform
-     
-     - Exemple de *`terraform plan`*
-     
-     - La sortie du plan montre certaines valeurs d'outputs à connaître après l'apply
-          ![terraform plan](./imgs/00-tf-op-plan.png)
-     
-     - Exemple de *`terraform apply`*
-     
-     - La sortie de terraform apply affiche les valeurs d'outputs définies dans les blocs ***`output`***
-     
-     - Vous pouvez constater que `myec2_private_ip`, `myec2_public_dns`, `myec2_public_ip` et `myec2_tags` sont affichés après l'exécution de `terraform apply`
-       
-          ![terraform apply](./imgs/01-tf-op-apply.png)
-     
-     <details>
-     <summary> <i>terraform apply</i> </summary>
-     
-     ```hcl
-     $ terraform apply
-     
-     Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
-     + create
-     
-     Terraform will perform the following actions:
-     
-     # aws_instance.myec2 will be created
-     + resource "aws_instance" "myec2" {
-        + ami                                  = "ami-0df435f331839b2d6"
-        ...
-        + instance_type                        = "t2.micro"
-        ...
-        }
-     
-     Plan: 1 to add, 0 to change, 0 to destroy.
-     
-     Changes to Outputs:
-     + myec2_private_ip = (known after apply)
-     + myec2_public_dns = (known after apply)
-     + myec2_public_ip  = (known after apply)
-     + myec2_tags       = {
-        + Name      = "Linux2023"
-        + Owner     = "Venkatesh"
-        + Terraform = "yes"
-        }
-     
-     Do you want to perform these actions?
-     Terraform will perform the actions described above.
-     Only 'yes' will be accepted to approve.
-     
-     Enter a value: yes
-     
-     aws_instance.myec2: Creating...
-     aws_instance.myec2: Still creating... [10s elapsed]
-     aws_instance.myec2: Still creating... [20s elapsed]
-     aws_instance.myec2: Still creating... [30s elapsed]
-     aws_instance.myec2: Creation complete after 36s [id=i-0b859641747b6c60c]
-     
-     Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
-     
-     Outputs:
-     
-     myec2_private_ip = "172.31.45.133"
-     myec2_public_dns = "http://ec2-54-175-102-97.compute-1.amazonaws.com"
-     myec2_public_ip = "54.175.102.97"
-     myec2_tags = tomap({
-     "Name" = "Linux2023"
-     "Owner" = "Venkatesh"
-     "Terraform" = "yes"
-     })
-     ```
-     
-     </details>
+1. ***`terraform init`*** : *Initialiser* Terraform
+2. ***`terraform validate`*** : *Valider* le code Terraform
+3. ***`terraform fmt`*** : *Formater* le code Terraform
+4. ***`terraform plan`*** : *Réviser* le plan Terraform
+5. ***`terraform apply`*** : *Créer* les Resources
 
-Console AWS
+<details>
+<summary><i>terraform apply</i></summary>
 
- ![terraform apply](./imgs/02-aws-console.png)
+```shell
+$ terraform apply -auto-approve
 
-  ![terraform apply](./imgs/03-aws-site.png)
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # random_integer.port will be created
+  # random_password.api_key will be created
+  # random_pet.server_name will be created
+  # tls_private_key.ssh_key will be created
+  # local_file.connection_info will be created
+
+Plan: 5 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + api_key         = (sensitive value)
+  + server_endpoint = (known after apply)
+  + server_info     = (known after apply)
+  + server_name     = (known after apply)
+  + server_port     = (known after apply)
+  + ssh_public_key  = (known after apply)
+
+random_pet.server_name: Creating...
+random_pet.server_name: Creation complete after 0s [id=srv-happy-lemur]
+random_integer.port: Creating...
+random_integer.port: Creation complete after 0s [id=8472]
+random_password.api_key: Creating...
+random_password.api_key: Creation complete after 0s [id=none]
+tls_private_key.ssh_key: Creating...
+tls_private_key.ssh_key: Creation complete after 1s [id=...]
+local_file.connection_info: Creating...
+local_file.connection_info: Creation complete after 0s [id=...]
+
+Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+api_key         = <sensitive>
+server_endpoint = "http://srv-happy-lemur:8472"
+server_info     = {
+  "environment" = "dev"
+  "name"        = "srv-happy-lemur"
+  "owner"       = "Venkatesh"
+  "port"        = 8472
+}
+server_name     = "srv-happy-lemur"
+server_port     = 8472
+ssh_public_key  = <<EOT
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... (clé publique RSA 2048 bits)
+EOT
+```
+
+</details>
+
+### Points clés à observer
+
+- **`api_key`** est marqué `sensitive = true` : sa valeur est remplacée par `<sensitive>` dans la sortie de `terraform apply`. La valeur reste accessible via `terraform output api_key`.
+- **`server_info`** est un **objet** : Terraform l'affiche en format multi-lignes avec les types et valeurs.
+- **`ssh_public_key`** contient une **chaîne multi-lignes** : la clé publique RSA générée par le provider `tls`.
+- **`server_endpoint`** est une **interpolation** : Terraform résout dynamiquement `${random_pet.server_name.id}:${random_integer.port.result}`.
+
+### Afficher un output individuel
+
+```shell
+# Afficher la valeur d'un output spécifique
+terraform output server_name
+terraform output server_port
+
+# Afficher un output sensible
+terraform output api_key
+
+# Sortie en JSON (utile pour les scripts)
+terraform output -json server_info
+```
+
+### Nettoyage
+
+```shell
+terraform destroy -auto-approve
+```
 
 ## Références :
 
-[Valeurs de Sortie](https://developer.hashicorp.com/terraform/language/values/outputs)
+- [Valeurs de Sortie](https://developer.hashicorp.com/terraform/language/values/outputs)
+- [Provider random](https://registry.terraform.io/providers/hashicorp/random/latest/docs)
+- [Provider tls](https://registry.terraform.io/providers/hashicorp/tls/latest/docs)

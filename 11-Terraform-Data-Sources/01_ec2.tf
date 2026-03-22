@@ -1,8 +1,3 @@
-resource "aws_instance" "myec2" {
-  ami           = data.aws_ami.amzn_linux_2023_latest.id # fetching Latest Amazon Linux AMI id from data sources
-  instance_type = var.ec2_instance_type
-
-  tags = {
-    Name = "Linux2023"
-  }
-}
+# Ce fichier a été remplacé par 01_resources.tf
+# Les ressources sont maintenant définies dans 01_resources.tf
+# en utilisant les providers légers : local, random, http (sans credentials AWS)

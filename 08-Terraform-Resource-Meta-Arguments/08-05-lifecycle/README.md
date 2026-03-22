@@ -1,3 +1,5 @@
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
+
 ## Meta-Argument Terraform : *`lifecycle`*
 
 ### Meta-Argument ***`lifecycle`***
@@ -7,252 +9,135 @@
 - Le meta-argument `lifecycle` offre un contrôle précis sur **quand et comment Terraform doit créer, mettre à jour ou supprimer des resources**.
 
 - Options du meta-argument `lifecycle` :
-  
+
   1. ***`create_before_destroy`*** :
-     
      - Lorsqu'il est défini à `true`, cet attribut indique que **Terraform doit créer une nouvelle resource avant de détruire l'ancienne** lorsqu'il doit remplacer la resource.
      - Cela peut aider à minimiser les temps d'arrêt lors des mises à jour.
-     - L'option par défaut est *`false`*
-  
-  2. ***`prevent_destroy`*** :
-     
+     - L'option par défaut est *`false`* (Terraform détruit d'abord, puis recrée).
+
+  2. ***`ignore_changes`*** :
+     - Cet attribut vous permet de spécifier une liste d'attributs pour lesquels Terraform doit ignorer les changements.
+     - C'est utile pour empêcher certains attributs d'être écrasés lors des plans et apply suivants.
+     - Couramment utilisé lorsque certains attributs peuvent être modifiés hors de Terraform et que vous souhaitez que Terraform respecte cet état.
+     - L'option `ignore_changes = all` ignore tous les attributs de la resource.
+
+  3. ***`prevent_destroy`*** :
      - Lorsqu'il est défini à `true`, cet attribut **empêche la resource d'être détruite ou supprimée**.
      - Cela peut être utile pour protéger des resources critiques contre une suppression accidentelle.
-     - L'option par défaut est *`false`*
-  
-  3. ***`ignore_changes`*** :
-     
-     - Cet attribut vous permet de spécifier une liste d'attributs pour lesquels Terraform doit ignorer les changements.
-     - C'est utile pour empêcher certains attributs d'être mis à jour lors des modifications de resources.
-     - Couramment utilisé lorsque certains attributs peuvent être modifiés par les utilisateurs depuis la Console AWS et que vous souhaitez que Terraform ignore ces changements
-     - Exemple : mise à niveau de version mineure d'une instance RDS
-     - L'option par défaut est *`false`*
+     - L'option par défaut est *`false`*.
 
-- **Exemple** : ***`create_before_destroy`***
-    [00_provider.tf](./01-create_before_destroy/00_provider.tf)
-  
-  ```hcl
-  terraform {
+---
+
+### Exemple — trois options dans un seul fichier
+
+[00_provider.tf](./00_provider.tf)
+
+```hcl
+terraform {
   required_providers {
-      aws = {
-          source = "hashicorp/aws"
-          version = "~> 5.0"
-      }
-  }
-  }
-  
-  provider "aws" {
-      region = "us-east-1"
-  
-      default_tags {
-      tags = {
-          Terraform = "yes"
-          Project = "terraform-learning"
-          Owner = "Venkatesh"
-      }
-      }
-  }
-  ```
-  
-     [01_ec2.tf](./01-create_before_destroy/01_ec2.tf)
-  
-  ```hcl
-  resource "aws_instance" "myec2" {
-      ami = "ami-0df435f331839b2d6"
-      instance_type = "t2.micro"
-      availability_zone = "us-east-1a"
-      # availability_zone = "us-east-1b"
-  
-      tags = {
-      Name = "Linux2023"
-      }
-  
-      # lifecycle {
-      #   create_before_destroy = true
-      # }
-  }
-  ```
-
-- Créons une instance EC2 AWS sans arguments `lifecycle`
-  
-  1. ***`terraform init`*** : *Initialiser* terraform
-  
-  2. ***`terraform validate`*** : *Valider* le code terraform
-  
-  3. ***`terraform fmt`*** : *Formater* le code terraform
-  
-  4. ***`terraform plan`*** : *Réviser* le plan terraform
-  
-  5. ***`terraform apply`*** : *Créer* des Resources avec terraform
-  - Une fois l'exécution de terraform terminée, vous devriez pouvoir vérifier sur votre Console AWS que la resource a été créée avec succès
-      ![terraform aws](./imgs/01-tf-ma-lc-aws-ec2.png)
-
-- Essayons maintenant de changer la **Availability Zone** de notre instance EC2 **sans** arguments `lifecycle` et observons le comportement
-  
-  ```hcl
-  resource "aws_instance" "myec2" {
-      ami = "ami-0df435f331839b2d6"
-      instance_type = "t2.micro"
-      # availability_zone = "us-east-1a"
-      availability_zone = "us-east-1b"
-  
-      tags = {
-      Name = "Linux2023"
-      }
-  
-      # lifecycle {
-      #   create_before_destroy = true
-      # }
-  }
-  ```
-
-- Exécutons les commandes Terraform pour comprendre le comportement des resources
-  
-  1. ***`terraform init`*** : *Initialiser* terraform
-  
-  2. ***`terraform validate`*** : *Valider* le code terraform
-  
-  3. ***`terraform fmt`*** : *Formater* le code terraform
-  
-  4. ***`terraform plan`*** : *Réviser* le plan terraform
-  
-  5. ***`terraform apply`*** : *Créer* des Resources avec terraform
-  - Une fois que nous exécutons *`terraform apply`*, Terraform détruit d'abord les resources existantes puis crée la resource
-    
-    - Exemple de *`terraform apply`*
-      
-        ![terraform apply](./imgs/02-tf-ma-lc-apply-1.png)
-      
-        ![terraform apply](./imgs/03-tf-ma-lc-apply-1.png)
-      
-        ![terraform aws](./imgs/04-tf-ma-lc-aws-1.png)
-      
-        ![terraform aws](./imgs/04-tf-ma-lc-aws-2.png)
-
-- Essayons maintenant de changer la Availability Zone de notre instance EC2 **avec** arguments `lifecycle` et observons le comportement
-  
-  ```hcl
-  resource "aws_instance" "myec2" {
-      ami = "ami-0df435f331839b2d6"
-      instance_type = "t2.micro"
-      availability_zone = "us-east-1a"
-      # availability_zone = "us-east-1b"
-  
-      tags = {
-      Name = "Linux2023"
-      }
-  
-      lifecycle {
-        create_before_destroy = true
-      }
-  }
-  ```
-  
-  * Une fois que nous exécutons *`terraform apply`*, Terraform **crée d'abord la nouvelle resource, puis détruit l'ancienne resource existante**
-    
-    - Exemple de *`terraform apply`*
-      
-        ![terraform apply](./imgs/05-tf-ma-lc-apply-1.png)
-      
-        ![terraform apply](./imgs/06-tf-ma-lc-apply-1.png)
-      
-        ![terraform aws](./imgs/07-tf-ma-lc-aws-1.png)
-
-- **Exemple** : ***`prevent_destroy`***
-  
-  - Utilisons l'argument *`prevent_destroy`* et observons le comportement
-    [01_ec2.tf](./02-prevent_destroy/02_ec2.tf)
-    
-    ```hcl
-    resource "aws_instance" "myec2" {
-    ami               = "ami-0df435f331839b2d6"
-    instance_type     = "t2.micro"
-    availability_zone = "us-east-1a"
-    # availability_zone = "us-east-1b"
-    
-    tags = {
-        Name = "Linux2023"
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
-    
-    lifecycle {
-        prevent_destroy = true
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
     }
-    }
-    ```
-  
-  - Exécutez la commande *`terraform destroy`* et observez le comportement
-    
-    - Terraform affiche **Error: Instance cannot be destroyed**
-      
-      ![terraform aws](./imgs/07-tf-ma-lc-destroy-1.png)
+  }
+}
 
-- **Exemple** : ***`ignore_changes`***
-  
-  - Utilisons le concept de tags et comprenons comment fonctionne `ignore_changes`
-  
-  - Nous allons d'abord **ajouter manuellement un *`tag`* sur notre EC2 AWS depuis la Console AWS** (ce tag ne faisait pas partie du code terraform)
-    
-      ![terraform plan](./imgs/09-tf-ma-lc-aws-tag-2.png)
+provider "local" {}
+provider "random" {}
+```
 
-    - Exécutez *terraform plan* et observez comment terraform détecte les changements effectués sur la Console AWS
-    - Terraform détecte les changements manuels effectués sur la Console AWS et si nous exécutons *terraform apply*, Terraform supprimera les tags appliqués manuellement sur l'EC2 AWS
-        ![terraform plan](./imgs/10-tf-ma-lc-ic-plan-1.png)
-    
-    - Ajoutons maintenant le meta-argument `ignore_changes` pour *tags* et observons le comportement de Terraform.
-    
-        [01_ec2.tf](./03-ignore_changes/01_ec2.tf)
-    
-        ```hcl
-        resource "aws_instance" "myec2" {
-        ami               = "ami-0df435f331839b2d6"
-        instance_type     = "t2.micro"
-        availability_zone = "us-east-1a"
-        # availability_zone = "us-east-1b"
-    
-        tags = {
-            Name = "Linux2023"
-        }
-    
-        lifecycle {
-            ignore_changes = [ tags ]
-        }
-        }
-        ```
-    - Exécutez *terraform plan* et observez comment terraform **ignore les changements** apportés aux tags depuis la Console AWS
-         ![terraform plan](./imgs/11-tf-ma-lc-ic-plan-2.png)
+[01_lifecycle.tf](./01_lifecycle.tf)
 
-- ***`ignore_changes`*** peut également être utilisé pour **ignorer tous les changements d'une resource particulière** avec l'option *ignore_changes = all*
-  
-  - Terraform ignorera complètement tout changement sur tous les attributs de cette resource lors de tentatives de mise à jour ou de modification
-  
-  - Exemple :
-    
-    ```hcl
-    resource "aws_instance" "myec2" {
-    ami               = "ami-0df435f331839b2d6"
-    instance_type     = "t2.micro"
-    availability_zone = "us-east-1a"
-    # availability_zone = "us-east-1b"
-    
-    tags = {
-        Name = "Linux2023"
-    }
-    
-    lifecycle {
-        ignore_changes = [ all ]
-    }
-    }
-    ```
-  
-  - Il est généralement préférable de spécifier les attributs exacts pour lesquels vous souhaitez ignorer les changements, plutôt que d'utiliser "*all*", afin d'avoir un contrôle plus précis sur les attributs à exclure des mises à jour
+```hcl
+# -------------------------------------------------------
+# lifecycle : create_before_destroy
+# Terraform crée le nouveau fichier AVANT de supprimer l'ancien
+# Utile pour les ressources sans downtime
+# -------------------------------------------------------
+resource "random_pet" "server_name" {
+  length = 2
 
-    #### Nettoyage
-    
-    6. ***`terraform destroy`*** : *Détruire ou supprimer* des Resources, Nettoyer les resources créées
-        - Après avoir tapé ***yes*** à l'invite de *`terraform destroy`*, terraform commencera à **détruire** les resources
-    
-        - Une fois l'exécution de terraform terminée, vous devriez pouvoir vérifier sur votre Console AWS que les resources ont été supprimées avec succès.
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
-### Références :
+# -------------------------------------------------------
+# lifecycle : ignore_changes
+# Terraform ignore les modifications sur le champ "content"
+# Utile quand une ressource est modifiée hors Terraform
+# -------------------------------------------------------
+resource "local_file" "managed_config" {
+  filename = "${path.module}/output/managed.conf"
+  content  = "SERVER=${random_pet.server_name.id}\nVERSION=1.0"
 
-[Le Meta-Argument lifecycle](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle)
+  lifecycle {
+    ignore_changes = [content]
+  }
+}
+
+# -------------------------------------------------------
+# lifecycle : prevent_destroy
+# Terraform refusera de détruire cette ressource
+# Décommentez pour tester : terraform destroy échouera
+# -------------------------------------------------------
+resource "local_file" "critical_config" {
+  filename = "${path.module}/output/critical.conf"
+  content  = "CRITICAL=true\nDO_NOT_DELETE=yes"
+
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
+}
+
+output "server_name" {
+  value = random_pet.server_name.id
+}
+```
+
+---
+
+### Explication détaillée
+
+#### 1. `create_before_destroy` — sur `random_pet.server_name`
+
+- Par défaut, si Terraform doit remplacer une resource (ex : `random_pet` avec un nouveau `length`), il **détruit d'abord l'ancienne** puis crée la nouvelle.
+- Avec `create_before_destroy = true`, Terraform **crée d'abord la nouvelle resource**, puis supprime l'ancienne.
+- Cela garantit la continuité : le nouveau nom est disponible avant que l'ancien ne disparaisse.
+
+#### 2. `ignore_changes` — sur `local_file.managed_config`
+
+- `ignore_changes = [content]` indique à Terraform d'**ignorer toute modification du champ `content`** lors des plans suivants.
+- Ainsi, si le fichier `managed.conf` est modifié manuellement après le premier `apply`, Terraform ne tentera pas de le réécrire.
+- C'est utile pour les fichiers qui peuvent être mis à jour par d'autres processus hors de Terraform.
+
+#### 3. `prevent_destroy` — sur `local_file.critical_config` (commenté)
+
+- `prevent_destroy = true` empêche Terraform de détruire la resource même avec `terraform destroy`.
+- Il est **commenté dans cet exemple** pour permettre le nettoyage complet avec `terraform destroy`. Si vous décommentez ce bloc et relancez `apply`, Terraform retournera une erreur lorsque vous tenterez de détruire cette resource.
+- Utile en production pour protéger des bases de données, des fichiers de configuration critiques ou tout état non reproductible.
+
+---
+
+### Commandes Terraform
+
+1. ***`terraform init`*** : *Initialiser* terraform
+2. ***`terraform validate`*** : *Valider* le code terraform
+3. ***`terraform fmt`*** : *Formater* le code terraform
+4. ***`terraform plan`*** : *Réviser* le plan terraform
+5. ***`terraform apply`*** : *Créer* des Resources avec terraform — `managed.conf` et `critical.conf` créés dans `output/`
+6. ***`terraform destroy`*** : *Détruire ou supprimer* des Resources, Nettoyer les resources créées
+
+> **Test `prevent_destroy`** : Décommentez le bloc `lifecycle { prevent_destroy = true }` dans `local_file.critical_config`, relancez `terraform apply`, puis tentez `terraform destroy`. Terraform retournera une erreur `Error: Instance cannot be destroyed`.
+
+---
+
+### Références
+
+- [Le Meta-Argument lifecycle](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle)
+- [Provider random](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/pet)
+- [Provider local](https://registry.terraform.io/providers/hashicorp/local/latest/docs)

@@ -1,23 +1,13 @@
-variable "aws_region" {
-  description = "AWS Region In Which Resources will be Created"
-  type        = string
-  default     = "us-east-1"
-}
-
-variable "owner" {
-  description = "Name of the Engineer who is creating Resources"
-  type        = string
-  default     = "Venkatesh"
-}
-
 variable "db_username" {
-  description = "DB User Name"
+  description = "Nom d'utilisateur base de données"
   type        = string
   sensitive   = true
+  default     = "admin"
 }
 
 variable "db_password" {
-  description = "DB Password"
+  description = "Mot de passe base de données (laisser vide pour générer automatiquement)"
   type        = string
   sensitive   = true
+  default     = ""
 }

@@ -1,29 +1,20 @@
-# Create 3 IAM Users using single resource block
-# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_user
+# Meta-argument FOR_EACH — set
+# Crée un fichier de profil par utilisateur
+# Équivaut à créer des utilisateurs IAM avec for_each + toset()
+# Note : les doublons dans un set sont automatiquement dédupliqués
 
-resource "aws_iam_user" "iamuser" {
-  for_each = toset(["Amar", "Akbar", "Anthony", "Amar"]) # Though user Amar is defined twice, set would remove duplicate
-  name     = each.key
+resource "local_file" "user_profile" {
+  for_each = toset(["Amar", "Akbar", "Anthony", "Amar"]) # "Amar" dédupliqué par le set
 
-  tags = {
-    Name = each.key
-    # Name = each.value # when using set , each.key == each.value , so you can use either key or value.
-  }
+  filename = "${path.module}/output/${each.key}-profile.conf"
+  content  = <<-EOT
+    USERNAME=${each.key}
+    ROLE=developer
+    CREATED=true
+  EOT
 }
 
-# above can also be written using map
-
-# resource "aws_iam_user" "iamuser" {
-#   for_each = {
-#     Amar  = null
-#     Akbar  = null
-#     Anthony  = null
-#   }
-
-#   name = each.key
-
-#   tags = {
-#     Name = each.key
-#   }
-# }
-
+output "user_profiles" {
+  description = "Profils utilisateurs créés (doublons supprimés par le set)"
+  value       = { for k, v in local_file.user_profile : k => v.filename }
+}

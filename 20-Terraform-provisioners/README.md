@@ -1,25 +1,30 @@
 # Provisioners Terraform
 
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
+
 - Les provisioners Terraform sont utilisés pour **exécuter des scripts ou des commandes sur une resource locale ou distante** lors de sa création ou de sa destruction.
 - Les provisioners permettent d'**effectuer des tâches de configuration supplémentaires** qui ne peuvent pas être réalisées directement via les arguments des resources.
-- **Remarque :** HashiCorp recommande d'utiliser les provisioners en **dernier recours**. Privilégiez les outils natifs du provider (ex. : `user_data` pour EC2) lorsque c'est possible.
+- **Remarque :** HashiCorp recommande d'utiliser les provisioners en **dernier recours**. Privilégiez les outils natifs du provider lorsque c'est possible.
 
 ## Types de Provisioners
 
 | Provisioner | Exécution | Usage typique |
 |---|---|---|
-| *`local-exec`* | Sur la **machine locale** qui exécute Terraform | Appels AWS CLI, enregistrement d'infos localement |
+| *`local-exec`* | Sur la **machine locale** qui exécute Terraform | Appels CLI, enregistrement d'infos localement, scripts |
 | *`file`* | Copie de fichiers vers la **resource distante** | Déposer des scripts de configuration |
 | *`remote-exec`* | Sur la **resource distante** via SSH/WinRM | Installation de logiciels, configuration initiale |
+
+> Dans ce lab, seul `local-exec` est utilisé — aucune connexion SSH ni serveur distant nécessaire.
 
 ---
 
 ## Exemple Pratique
 
-**Scénario** : Déployer une instance EC2 et l'enchaîner avec les trois types de provisioners :
-1. `local-exec` enregistre l'IP de l'instance localement
-2. `file` copie un script de configuration sur l'instance
-3. `remote-exec` exécute le script pour installer Apache
+**Scénario** : Simuler le provisionnement d'un serveur à l'aide d'une `null_resource` avec 4 provisioners `local-exec` :
+1. Provisioner 1 — loguer le démarrage du serveur dans `output/provisioner.log`
+2. Provisioner 2 — créer un script `output/setup.sh` (simule la copie d'un script vers un serveur)
+3. Provisioner 3 — exécuter le script (simule `remote-exec`)
+4. Provisioner 4 — loguer la destruction du serveur (`when = destroy`)
 
 ### Structure des Fichiers
 
@@ -30,8 +35,9 @@
 ├── 02_security_group.tf
 ├── 03_ec2.tf
 ├── 04_outputs.tf
-└── scripts/
-    └── setup.sh
+└── output/
+    ├── provisioner.log   (créé par les provisioners)
+    └── setup.sh          (créé par les provisioners)
 ```
 
 [00_provider.tf](./00_provider.tf)
@@ -39,200 +45,138 @@
 ```hcl
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
   }
 }
 
-provider "aws" {
-  region = var.aws_region
-
-  default_tags {
-    tags = {
-      Terraform = "yes"
-      Owner     = var.owner
-    }
-  }
-}
+provider "null" {}
+provider "random" {}
+provider "local" {}
 ```
 
 [01_variables.tf](./01_variables.tf)
 
 ```hcl
-variable "aws_region" {
-  description = "Région AWS dans laquelle les resources seront créées"
+variable "environment" {
+  description = "Nom de l'environnement"
   type        = string
-  default     = "us-east-1"
+  default     = "dev"
 }
 
 variable "owner" {
-  description = "Nom de l'ingénieur qui crée les resources"
+  description = "Nom de l'ingénieur responsable"
   type        = string
   default     = "Venkatesh"
 }
 
-variable "ec2_ami" {
-  description = "AMI EC2 AWS Amazon Linux 2023"
+variable "app_name" {
+  description = "Nom de l'application"
   type        = string
-  default     = "ami-0df435f331839b2d6"
-}
-
-variable "ec2_instance_type" {
-  description = "Type d'instance EC2"
-  type        = string
-  default     = "t2.micro"
-}
-
-variable "key_name" {
-  description = "Nom de la key pair AWS pour la connexion SSH"
-  type        = string
-  default     = "terraform-demo"
+  default     = "myapp"
 }
 ```
 
 [02_security_group.tf](./02_security_group.tf)
 
 ```hcl
-resource "aws_security_group" "provisioner_sg" {
-  name        = "provisioner-sg"
-  description = "Security Group pour autoriser SSH et HTTP"
+# Ressource de base pour simuler un serveur
+resource "random_pet" "server_name" {
+  length = 2
+  prefix = var.environment
+}
 
-  # Autoriser SSH entrant (port 22)
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Autoriser HTTP entrant (port 80)
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Autoriser tout le trafic sortant
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "provisioner-sg"
-  }
+resource "random_id" "server_id" {
+  byte_length = 4
 }
 ```
+
+> Note : `02_security_group.tf` contient ici les resources `random_pet` et `random_id` qui simulent les métadonnées du serveur — aucun security group AWS n'est nécessaire.
 
 [03_ec2.tf](./03_ec2.tf)
 
 ```hcl
-resource "aws_instance" "myec2" {
-  ami                    = var.ec2_ami
-  instance_type          = var.ec2_instance_type
-  key_name               = var.key_name
-  vpc_security_group_ids = [aws_security_group.provisioner_sg.id]
-
-  tags = {
-    Name = "Linux2023-Provisioner"
+resource "null_resource" "server_provisioner" {
+  triggers = {
+    server_id = random_id.server_id.hex
   }
 
   # -------------------------------------------------------
-  # Provisioner 1 : local-exec
-  # Exécuté sur la machine locale qui lance Terraform
+  # Provisioner 1 : local-exec (création)
+  # Exécuté localement au moment du terraform apply
   # -------------------------------------------------------
   provisioner "local-exec" {
-    command = "echo Instance créée - IP Publique : ${self.public_ip} >> ec2-info.txt"
+    command = "echo '[PROVISIONER] Serveur ${random_pet.server_name.id} (${random_id.server_id.hex}) démarré le $(date)' >> ${path.module}/output/provisioner.log"
   }
 
   # -------------------------------------------------------
-  # Provisioner 2 : file
-  # Copie le script local vers l'instance EC2 distante
+  # Provisioner 2 : local-exec (création d'un fichier config)
+  # Simule la copie d'un fichier vers un serveur distant
   # -------------------------------------------------------
-  provisioner "file" {
-    source      = "scripts/setup.sh"
-    destination = "/tmp/setup.sh"
-
-    connection {
-      type        = "ssh"
-      user        = "ec2-user"
-      private_key = file("~/.ssh/id_rsa")
-      host        = self.public_ip
-    }
+  provisioner "local-exec" {
+    command = <<-EOT
+      mkdir -p ${path.module}/output
+      cat > ${path.module}/output/setup.sh << 'SCRIPT'
+#!/bin/bash
+echo "Configuration de ${var.app_name} sur ${random_pet.server_name.id}"
+echo "Environnement : ${var.environment}"
+echo "Propriétaire  : ${var.owner}"
+SCRIPT
+      chmod +x ${path.module}/output/setup.sh
+      echo '[PROVISIONER] Script setup.sh copié avec succès' >> ${path.module}/output/provisioner.log
+    EOT
   }
 
   # -------------------------------------------------------
-  # Provisioner 3 : remote-exec
-  # Exécuté sur l'instance EC2 distante via SSH
+  # Provisioner 3 : local-exec (exécution du script)
+  # Simule remote-exec (dans ce lab, exécution locale)
   # -------------------------------------------------------
-  provisioner "remote-exec" {
-    inline = [
-      "chmod +x /tmp/setup.sh",
-      "sudo /tmp/setup.sh",
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "ec2-user"
-      private_key = file("~/.ssh/id_rsa")
-      host        = self.public_ip
-    }
+  provisioner "local-exec" {
+    command = <<-EOT
+      bash ${path.module}/output/setup.sh >> ${path.module}/output/provisioner.log 2>&1
+      echo '[PROVISIONER] Script exécuté avec succès' >> ${path.module}/output/provisioner.log
+    EOT
   }
 
   # -------------------------------------------------------
-  # Provisioner de destruction : local-exec with when=destroy
-  # Exécuté sur la machine locale lors du terraform destroy
+  # Provisioner 4 : local-exec when=destroy
+  # Exécuté au moment du terraform destroy
   # -------------------------------------------------------
   provisioner "local-exec" {
     when    = destroy
-    command = "echo Instance ${self.public_ip} détruite le $(date) >> ec2-info.txt"
+    command = "echo '[DESTROY] Serveur supprimé le $(date)' >> ${path.module}/output/provisioner.log"
   }
+
+  depends_on = [random_pet.server_name, random_id.server_id]
 }
-```
-
-[scripts/setup.sh](./scripts/setup.sh)
-
-```bash
-#!/bin/bash
-# Script copié sur l'instance via le provisioner "file"
-# puis exécuté via le provisioner "remote-exec"
-
-sudo yum update -y
-sudo yum install -y httpd
-sudo systemctl enable httpd
-sudo systemctl start httpd
-
-echo "<html>
-  <body>
-    <h1><center>Serveur déployé via Terraform Provisioners !</center></h1>
-    <p><center>Instance configurée avec remote-exec + file provisioners</center></p>
-  </body>
-</html>" | sudo tee /var/www/html/index.html
 ```
 
 [04_outputs.tf](./04_outputs.tf)
 
 ```hcl
-output "ec2_public_ip" {
-  description = "Adresse IP publique de l'instance EC2"
-  value       = aws_instance.myec2.public_ip
+output "server_name" {
+  description = "Nom du serveur provisionné"
+  value       = random_pet.server_name.id
 }
 
-output "ec2_public_dns" {
-  description = "DNS public de l'instance EC2"
-  value       = "http://${aws_instance.myec2.public_dns}"
+output "server_id" {
+  description = "ID unique du serveur"
+  value       = random_id.server_id.hex
 }
 
-output "ec2_id" {
-  description = "ID de l'instance EC2"
-  value       = aws_instance.myec2.id
+output "provisioner_log" {
+  description = "Chemin du journal des provisioners"
+  value       = "${path.module}/output/provisioner.log"
 }
 ```
 
@@ -240,16 +184,14 @@ output "ec2_id" {
 
 ## Exécution Pas à Pas
 
-- Exécutons les commandes Terraform pour comprendre le comportement des provisioners
-
-  1. ***`terraform init`*** : *Initialiser* Terraform
-  2. ***`terraform validate`*** : *Valider* le code Terraform
-  3. ***`terraform fmt`*** : *Formater* le code Terraform
-  4. ***`terraform plan`*** : *Réviser* le plan Terraform
-  5. ***`terraform apply`*** : *Créer* des Resources avec Terraform
+1. ***`terraform init`*** : *Initialiser* Terraform
+2. ***`terraform validate`*** : *Valider* le code Terraform
+3. ***`terraform fmt`*** : *Formater* le code Terraform
+4. ***`terraform plan`*** : *Réviser* le plan Terraform
+5. ***`terraform apply`*** : *Créer* les Resources et déclencher les provisioners
 
 <details>
-<summary> <i>terraform apply</i> </summary>
+<summary><i>terraform apply</i></summary>
 
 ```shell
 $ terraform apply -auto-approve
@@ -260,59 +202,69 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  # aws_security_group.provisioner_sg will be created
-  + resource "aws_security_group" "provisioner_sg" { ... }
-
-  # aws_instance.myec2 will be created
-  + resource "aws_instance" "myec2" {
-      + ami                    = "ami-0df435f331839b2d6"
-      + instance_type          = "t2.micro"
-      + key_name               = "terraform-demo"
-      + tags                   = { + "Name" = "Linux2023-Provisioner" }
+  # random_id.server_id will be created
+  + resource "random_id" "server_id" {
+      + byte_length = 4
+      + hex         = (known after apply)
     }
 
-Plan: 2 to add, 0 to change, 0 to destroy.
+  # random_pet.server_name will be created
+  + resource "random_pet" "server_name" {
+      + id     = (known after apply)
+      + length = 2
+      + prefix = "dev"
+    }
 
-aws_security_group.provisioner_sg: Creating...
-aws_security_group.provisioner_sg: Creation complete after 2s [id=sg-0a1b2c3d4e5f67890]
-aws_instance.myec2: Creating...
-aws_instance.myec2: Still creating... [10s elapsed]
-aws_instance.myec2: Still creating... [20s elapsed]
-aws_instance.myec2: Still creating... [30s elapsed]
-aws_instance.myec2: Provisioning with 'local-exec'...
-aws_instance.myec2 (local-exec): Executing: ["/bin/sh" "-c" "echo Instance créée - IP Publique : 54.175.102.97 >> ec2-info.txt"]
-aws_instance.myec2: Provisioning with 'file'...
-aws_instance.myec2: Provisioning with 'remote-exec'...
-aws_instance.myec2 (remote-exec): Connecting via SSH...
-aws_instance.myec2 (remote-exec): Connected!
-aws_instance.myec2 (remote-exec): + sudo yum update -y
-aws_instance.myec2 (remote-exec): + sudo yum install -y httpd
-aws_instance.myec2 (remote-exec): + sudo systemctl enable httpd
-aws_instance.myec2 (remote-exec): + sudo systemctl start httpd
-aws_instance.myec2: Creation complete after 56s [id=i-0acb2a1d622c55a02]
+  # null_resource.server_provisioner will be created
+  + resource "null_resource" "server_provisioner" {
+      + id       = (known after apply)
+      + triggers = (known after apply)
+    }
 
-Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+random_id.server_id: Creating...
+random_id.server_id: Creation complete after 0s [id=e2a1f83c]
+random_pet.server_name: Creating...
+random_pet.server_name: Creation complete after 0s [id=dev-gentle-owl]
+null_resource.server_provisioner: Creating...
+null_resource.server_provisioner: Provisioning with 'local-exec'...
+null_resource.server_provisioner (local-exec): Executing: ["/bin/sh" "-c" "echo '[PROVISIONER] Serveur dev-gentle-owl (e2a1f83c) démarré le Sat Mar 21 10:15:00 UTC 2026' >> ./output/provisioner.log"]
+null_resource.server_provisioner: Provisioning with 'local-exec'...
+null_resource.server_provisioner (local-exec): Executing: ["/bin/sh" "-c" "mkdir -p ./output\ncat > ./output/setup.sh << 'SCRIPT'\n#!/bin/bash\necho \"Configuration de myapp sur dev-gentle-owl\"\necho \"Environnement : dev\"\necho \"Propriétaire  : Venkatesh\"\nSCRIPT\nchmod +x ./output/setup.sh\necho '[PROVISIONER] Script setup.sh copié avec succès' >> ./output/provisioner.log\n"]
+null_resource.server_provisioner: Provisioning with 'local-exec'...
+null_resource.server_provisioner (local-exec): Executing: ["/bin/sh" "-c" "bash ./output/setup.sh >> ./output/provisioner.log 2>&1\necho '[PROVISIONER] Script exécuté avec succès' >> ./output/provisioner.log\n"]
+null_resource.server_provisioner: Creation complete after 0s [id=1234567890]
+
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-ec2_id         = "i-0acb2a1d622c55a02"
-ec2_public_dns = "http://ec2-54-175-102-97.compute-1.amazonaws.com"
-ec2_public_ip  = "54.175.102.97"
+provisioner_log = "./output/provisioner.log"
+server_id       = "e2a1f83c"
+server_name     = "dev-gentle-owl"
 ```
 
 </details>
 
-- Après l'apply, vérifiez le fichier `ec2-info.txt` généré localement par `local-exec` :
+### Contenu de `output/provisioner.log` après l'apply
 
-```shell
-$ cat ec2-info.txt
-Instance créée - IP Publique : 54.175.102.97
+```
+[PROVISIONER] Serveur dev-gentle-owl (e2a1f83c) démarré le Sat Mar 21 10:15:00 UTC 2026
+[PROVISIONER] Script setup.sh copié avec succès
+Configuration de myapp sur dev-gentle-owl
+Environnement : dev
+Propriétaire  : Venkatesh
+[PROVISIONER] Script exécuté avec succès
 ```
 
-- Accédez au site web déployé par `remote-exec` via l'URL fournie en output :
+### Contenu de `output/setup.sh` créé par le provisioner
 
-```shell
-http://ec2-54-175-102-97.compute-1.amazonaws.com
+```bash
+#!/bin/bash
+echo "Configuration de myapp sur dev-gentle-owl"
+echo "Environnement : dev"
+echo "Propriétaire  : Venkatesh"
 ```
 
 ---
@@ -324,14 +276,12 @@ http://ec2-54-175-102-97.compute-1.amazonaws.com
 - Vous pouvez modifier ce comportement avec l'argument `on_failure` :
 
 ```hcl
-provisioner "remote-exec" {
+provisioner "local-exec" {
   on_failure = continue  # ignore l'échec et continue
   # ou
   on_failure = fail      # comportement par défaut : échoue et marque comme tainted
 
-  inline = [
-    "sudo yum install -y httpd",
-  ]
+  command = "echo 'test'"
 }
 ```
 
@@ -340,49 +290,52 @@ provisioner "remote-exec" {
 ## Provisioners de Destruction (*`when = destroy`*)
 
 - Les provisioners avec `when = destroy` sont exécutés **avant** que la resource soit détruite.
-- Utile pour des tâches de nettoyage, désabonnement de services, archivage de logs, etc.
+- Utile pour des tâches de nettoyage, archivage de logs, désabonnement de services, etc.
 
 ```hcl
 provisioner "local-exec" {
   when    = destroy
-  command = "echo Instance ${self.public_ip} détruite le $(date) >> ec2-info.txt"
+  command = "echo '[DESTROY] Serveur supprimé le $(date)' >> ${path.module}/output/provisioner.log"
 }
 ```
 
 <details>
-<summary> <i>terraform destroy (provisioner when=destroy)</i> </summary>
+<summary><i>terraform destroy (provisioner when=destroy)</i></summary>
 
 ```shell
 $ terraform destroy -auto-approve
 
-aws_instance.myec2: Destroying... [id=i-0acb2a1d622c55a02]
-aws_instance.myec2: Provisioning with 'local-exec'...
-aws_instance.myec2 (local-exec): Executing: ["/bin/sh" "-c" "echo Instance 54.175.102.97 détruite le Sat Jan 15 10:45:00 UTC 2024 >> ec2-info.txt"]
-aws_instance.myec2: Destruction complete after 32s
-aws_security_group.provisioner_sg: Destroying...
-aws_security_group.provisioner_sg: Destruction complete after 1s
+null_resource.server_provisioner: Destroying... [id=1234567890]
+null_resource.server_provisioner: Provisioning with 'local-exec'...
+null_resource.server_provisioner (local-exec): Executing: ["/bin/sh" "-c" "echo '[DESTROY] Serveur supprimé le Sat Mar 21 10:30:00 UTC 2026' >> ./output/provisioner.log"]
+null_resource.server_provisioner: Destruction complete after 0s
+random_pet.server_name: Destroying...
+random_pet.server_name: Destruction complete after 0s
+random_id.server_id: Destroying...
+random_id.server_id: Destruction complete after 0s
 
-Destroy complete! Resources: 2 destroyed.
+Destroy complete! Resources: 3 destroyed.
 ```
 
 </details>
 
-- Vérifiez le fichier `ec2-info.txt` après le destroy :
+### Contenu de `output/provisioner.log` après le destroy
 
-```shell
-$ cat ec2-info.txt
-Instance créée - IP Publique : 54.175.102.97
-Instance 54.175.102.97 détruite le Sat Jan 15 10:45:00 UTC 2024
+```
+[PROVISIONER] Serveur dev-gentle-owl (e2a1f83c) démarré le Sat Mar 21 10:15:00 UTC 2026
+[PROVISIONER] Script setup.sh copié avec succès
+Configuration de myapp sur dev-gentle-owl
+Environnement : dev
+Propriétaire  : Venkatesh
+[PROVISIONER] Script exécuté avec succès
+[DESTROY] Serveur supprimé le Sat Mar 21 10:30:00 UTC 2026
 ```
 
 ---
 
 ## Références :
 
-Provisioners Terraform : https://developer.hashicorp.com/terraform/language/resources/provisioners/syntax
-
-remote-exec : https://developer.hashicorp.com/terraform/language/resources/provisioners/remote-exec
-
-local-exec : https://developer.hashicorp.com/terraform/language/resources/provisioners/local-exec
-
-file : https://developer.hashicorp.com/terraform/language/resources/provisioners/file
+- [Provisioners Terraform](https://developer.hashicorp.com/terraform/language/resources/provisioners/syntax)
+- [local-exec](https://developer.hashicorp.com/terraform/language/resources/provisioners/local-exec)
+- [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource)
+- [Provider random](https://registry.terraform.io/providers/hashicorp/random/latest/docs)

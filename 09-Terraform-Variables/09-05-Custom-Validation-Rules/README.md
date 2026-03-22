@@ -1,147 +1,209 @@
-# Variables Terraform
+# Variables Terraform — Règles de validation personnalisées
 
-## Règles de Validation Personnalisées pour les Variables d'Entrée Terraform
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
 
+## Règles de validation personnalisées (`validation {}`)
 
-- Les règles de validation personnalisées sont un moyen d'**imposer des conditions spécifiques** ou des contraintes sur les valeurs de vos attributs de resource.
+Les règles de validation personnalisées permettent d'**imposer des conditions spécifiques** sur les valeurs des variables avant que Terraform n'accepte la configuration.
 
-- Ces règles vous permettent de **définir des vérifications qui doivent être satisfaites avant que Terraform accepte la configuration**.
-
-- **Règles de Validation** : Ce sont des conditions que vous définissez pour vos attributs de resource. Elles peuvent être aussi simples ou complexes que vos exigences.
-
-- **Validation Personnalisée** : Terraform vous permet de créer vos propres règles de validation en utilisant le bloc ***`validation`*** dans une définition de resource.
-
+- **Validation** : conditions que vous définissez à l'intérieur d'un bloc `variable`. Elles peuvent être simples ou complexes.
+- **Validation personnalisée** : Terraform permet de créer vos propres règles en utilisant le bloc `validation {}` dans une déclaration de variable.
 - **Cas d'usage** :
-    - S'assurer que les **paramètres requis sont définis**.
-    - Vérifier que les valeurs répondent à des critères spécifiques.
-    - S'assurer que **certaines conditions sont satisfaites avant la création de la resource**.
-
+  - S'assurer que les paramètres requis respectent un format attendu.
+  - Vérifier que les valeurs répondent à des critères numériques ou textuels.
+  - S'assurer que certaines conditions sont satisfaites **avant** la création des ressources.
 - **Avantages** :
-    - Ajoute une couche de contrôle supplémentaire sur votre infrastructure.
-    - Aide à **détecter les erreurs de configuration potentielles** tôt dans le processus de déploiement.
-    - Fournit des messages d'erreur significatifs pour faciliter le dépannage.
+  - Ajoute une couche de contrôle supplémentaire sur votre configuration.
+  - Aide à **détecter les erreurs tôt** dans le processus de déploiement.
+  - Fournit des messages d'erreur explicites pour faciliter le dépannage.
 
-- **Exemple** :
+---
 
-    [00_provider.tf](./00_provider.tf)
-    ```hcl
-    terraform {
-    required_providers {
-        aws = {
-        source  = "hashicorp/aws"
-        version = "~> 5.0"
-        }
-    }
-    }
+## Fichiers du lab
 
-    provider "aws" {
-    region = var.aws_region
-
-    default_tags {
-        tags = {
-        Terraform = "yes"
-        Owner = var.owner
-        }
-    }
-    }
-    ```
-
-    [01_ec2.tf](./01_ec2.tf)
-    ```hcl
-    resource "aws_instance" "myec2" {
-    ami = var.ec2_ami
-    instance_type = var.ec2_instance_type
-
-    tags = {
-        Name = "Linux2023"
-        env  = var.env
-    }
-    }
-    ```
-
-    [02_variables.tf](./02_variables.tf)
-    ```hcl
-    variable "aws_region" {
-    description = "Région AWS dans laquelle les resources seront créées"
-    type        = string
-    default     = "us-east-1"
-    }
-
-    variable "owner" {
-    description = "Nom de l'ingénieur qui crée les resources"
-    type        = string
-    default     = "Venkatesh"
-    }
-
-    variable "ec2_ami" {
-    description = "AMI EC2 AWS Amazon Linux 2023"
-    type        = string
-    default     = "ami-0df435f331839b2d6" # Amazon Linux 2023
-    validation {
-        condition = length(var.ec2_ami) > 4 && substr(var.ec2_ami, 0,4) == "ami-"
-        error_message = "La valeur de l'ID AMI EC2 doit être un ID AMI valide, commençant par \"ami-\"."
-    }
-    }
-
-    variable "ec2_instance_type" {
-    description = "Type d'instance EC2"
-    type        = string
-    default     = "t2.micro"
-    }
-
-    variable "env" {
-    description = "Type d'environnement"
-    type        = string
-    default     = "dev"
-    }
-    ```
-
-
-- Dans l'exemple ci-dessus,
-    la variable `ec2_ami` : nous définissons des règles de validation personnalisées qui signifient que l'ID `ami` doit avoir une ***longueur > 4*** et commencer toujours par *`ami-`*
-
-
-Pour tester les règles de validation personnalisées, changeons l'ID ami pour qu'il commence différemment et observons ce que `terraform` signale
+**`00_provider.tf`**
 
 ```hcl
-    variable "ec2_ami" {
-    description = "AMI EC2 AWS Amazon Linux 2023"
-    type        = string
-    #default     = "ami-0df435f331839b2d6" # Amazon Linux 2023
-    default     = "xyz-0df435f331839b2d6"
-    validation {
-        condition = length(var.ec2_ami) > 4 && substr(var.ec2_ami, 0,4) == "ami-"
-        error_message = "La valeur de l'ID AMI EC2 doit être un ID AMI valide, commençant par \"ami-\"."
+terraform {
+  required_providers {
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
     }
-   ```
+  }
+}
 
+provider "local" {}
+provider "random" {}
+```
 
-- Sortie de ***`terraform plan`***
+**`01_ec2.tf`**
 
-    - Vous pouvez constater les règles de validation en action et l'`error_message` affiché pour effectuer la correction
+```hcl
+resource "random_pet" "server" {
+  length = 2
+  prefix = var.environment
+}
 
-    ```hcl
-    $ terraform plan
+resource "local_file" "config" {
+  filename = "${path.module}/output/server.conf"
+  content  = "SERVER=${random_pet.server.id}\nENV=${var.environment}\nPORT=${var.server_port}"
+}
 
-    Planning failed. Terraform encountered an error while generating this plan.
+output "server_name" { value = random_pet.server.id }
+output "server_port" { value = var.server_port }
+```
 
-    ╷
-    │ Error: Invalid value for variable
-    │
-    │   on 02_variables.tf line 13:
-    │   13: variable "ec2_ami" {
-    │     ├────────────────
-    │     │ var.ec2_ami is "xyz-0df435f331839b2d6"
-    │
-    │ La valeur de l'ID AMI EC2 doit être un ID AMI valide, commençant par "ami-".
-    │
-    │ This was checked by the validation rule at 02_variables.tf:18,3-13.
-    ```
+**`02_variables.tf`**
 
+```hcl
+variable "environment" {
+  description = "Nom de l'environnement (dev, staging, prod uniquement)"
+  type        = string
+  default     = "dev"
 
-## Références :
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "L'environnement doit être : dev, staging ou prod."
+  }
+}
 
-[Conditions Personnalisées Terraform](https://developer.hashicorp.com/terraform/language/expressions/custom-conditions)
+variable "server_port" {
+  description = "Port du serveur (entre 1024 et 65535)"
+  type        = number
+  default     = 8080
 
+  validation {
+    condition     = var.server_port >= 1024 && var.server_port <= 65535
+    error_message = "Le port doit être compris entre 1024 et 65535."
+  }
+}
+```
 
+---
+
+## Explication des règles de validation
+
+### Variable `environment`
+
+```hcl
+validation {
+  condition     = contains(["dev", "staging", "prod"], var.environment)
+  error_message = "L'environnement doit être : dev, staging ou prod."
+}
+```
+
+La fonction `contains()` vérifie que la valeur fournie appartient à la liste autorisée. Toute autre valeur (ex : `"production"`, `"uat"`) déclenchera l'erreur.
+
+### Variable `server_port`
+
+```hcl
+validation {
+  condition     = var.server_port >= 1024 && var.server_port <= 65535
+  error_message = "Le port doit être compris entre 1024 et 65535."
+}
+```
+
+Les ports inférieurs à `1024` sont réservés au système. La règle garantit que seuls des ports applicatifs valides sont utilisés.
+
+---
+
+## Test de validation — valeur incorrecte
+
+### Exemple : `environment = "production"` (valeur invalide)
+
+```bash
+$ terraform plan -var="environment=production"
+
+Planning failed. Terraform encountered an error while generating this plan.
+
+╷
+│ Error: Invalid value for variable
+│
+│   on 02_variables.tf line 1:
+│    1: variable "environment" {
+│     ├────────────────
+│     │ var.environment is "production"
+│
+│ L'environnement doit être : dev, staging ou prod.
+│
+│ This was checked by the validation rule at 02_variables.tf:6,3-13.
+╵
+```
+
+### Exemple : `server_port = 80` (port réservé)
+
+```bash
+$ terraform plan -var="server_port=80"
+
+Planning failed. Terraform encountered an error while generating this plan.
+
+╷
+│ Error: Invalid value for variable
+│
+│   on 02_variables.tf line 12:
+│   12: variable "server_port" {
+│     ├────────────────
+│     │ var.server_port is 80
+│
+│ Le port doit être compris entre 1024 et 65535.
+│
+│ This was checked by the validation rule at 02_variables.tf:17,3-13.
+╵
+```
+
+---
+
+## Test de validation — valeur correcte
+
+```bash
+$ terraform plan -var="environment=staging" -var="server_port=9090"
+
+Terraform will perform the following actions:
+
+  # random_pet.server will be created
+  + resource "random_pet" "server" {
+      + id     = (known after apply)
+      + length = 2
+      + prefix = "staging"
+    }
+
+  # local_file.config will be created
+  + resource "local_file" "config" {
+      + content  = (known after apply)
+      + filename = "./output/server.conf"
+    }
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+```
+
+---
+
+## Commandes Terraform
+
+```bash
+terraform init
+terraform validate
+terraform fmt
+
+# Test avec valeurs valides
+terraform plan -var="environment=staging" -var="server_port=9090"
+
+# Test avec valeurs invalides (déclenchement des erreurs de validation)
+terraform plan -var="environment=production"
+terraform plan -var="server_port=80"
+
+terraform apply     # confirmer avec yes
+terraform destroy   # confirmer avec yes
+```
+
+---
+
+## Références
+
+- [Conditions personnalisées Terraform](https://developer.hashicorp.com/terraform/language/expressions/custom-conditions)
+- [Bloc `validation` dans les variables](https://developer.hashicorp.com/terraform/language/values/variables#custom-validation-rules)

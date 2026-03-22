@@ -42,7 +42,7 @@ resource "local_file" "config" {
 # Bloc data — lecture d'une ressource existante
 # -------------------------------------------------------
 data "local_file" "readme" {
-  filename = "${path.module}/../../README.md"
+  filename = "${path.module}/README.md"
 }
 
 # -------------------------------------------------------

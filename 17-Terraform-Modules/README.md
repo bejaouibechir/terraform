@@ -1,3 +1,5 @@
+> ⚙️ Ce lab utilise **LocalStack** — aucune credential AWS réelle requise.
+
 # Modules Terraform
 
 ## Modules Terraform
@@ -138,8 +140,25 @@ terraform {
   }
 }
 
+# ---------------------------------------------------------------------------
+# Provider AWS — LocalStack (simulation locale, aucune credential AWS réelle)
+# LocalStack doit être lancé : docker run -d -p 4566:4566 localstack/localstack
+# ---------------------------------------------------------------------------
 provider "aws" {
   region = var.aws_region
+
+  access_key                  = "test"
+  secret_key                  = "test"
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+
+  endpoints {
+    ec2 = "http://localhost:4566"
+    s3  = "http://localhost:4566"
+    iam = "http://localhost:4566"
+    sts = "http://localhost:4566"
+  }
 
   default_tags {
     tags = {
@@ -205,81 +224,110 @@ output "vpc_prod_id" {
 ```
 
 - Dans l'exemple ci-dessus,
-  
+
   1. Le **module VPC** est défini une seule fois dans `modules/vpc/`
   2. Il est **réutilisé deux fois** : une fois pour l'environnement dev et une fois pour l'environnement prod
   3. Chaque appel de module fournit ses propres valeurs de variables (`vpc_name`, `vpc_cidr`, etc.)
   4. Les **outputs du module** (`vpc_id`, `subnet_id`) sont accessibles depuis la configuration principale via `module.<nom_module>.<nom_output>`
 
-- Exécutons les commandes Terraform pour comprendre le comportement des modules
-  
-  1. ***`terraform init`*** : *Initialiser* Terraform (télécharge également les modules distants)
-  2. ***`terraform validate`*** : *Valider* le code Terraform
-  3. ***`terraform fmt`*** : *Formater* le code Terraform
-  4. ***`terraform plan`*** : *Réviser* le plan Terraform
-  5. ***`terraform apply`*** : *Créer* des Resources avec Terraform
-  
-  <details>
-  <summary> <i>terraform apply</i> </summary>
-  
-  ```hcl
-  $ terraform apply
-  
-  Terraform used the selected providers to generate the following execution plan.
-  Resource actions are indicated with the following symbols:
-    + create
-  
-  Terraform will perform the following actions:
-  
-  # module.vpc_dev.aws_vpc.this will be created
-  + resource "aws_vpc" "this" {
-      + cidr_block       = "10.0.0.0/16"
-      + id               = (known after apply)
-      + tags             = {
-          + "Name" = "MyVPC-Dev"
-        }
-    }
-  
-  # module.vpc_dev.aws_subnet.this will be created
-  + resource "aws_subnet" "this" {
-      + availability_zone = "us-east-1a"
-      + cidr_block        = "10.0.1.0/24"
-      + id                = (known after apply)
-      + vpc_id            = (known after apply)
-    }
-  
-  # module.vpc_prod.aws_vpc.this will be created
-  + resource "aws_vpc" "this" {
-      + cidr_block       = "10.1.0.0/16"
-      + id               = (known after apply)
-      + tags             = {
-          + "Name" = "MyVPC-Prod"
-        }
-    }
-  
-  # module.vpc_prod.aws_subnet.this will be created
-  + resource "aws_subnet" "this" {
-      + availability_zone = "us-east-1b"
-      + cidr_block        = "10.1.1.0/24"
-      + id                = (known after apply)
-      + vpc_id            = (known after apply)
-    }
-  
-  Plan: 4 to add, 0 to change, 0 to destroy.
-  
-  Changes to Outputs:
-    + vpc_dev_id  = (known after apply)
-    + vpc_prod_id = (known after apply)
-  
-  Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
-  
-  Outputs:
-  
-  vpc_dev_id  = "vpc-0ab12cd34ef567890"
-  vpc_prod_id = "vpc-0cd34ef56ab789012"
-  ```
-  
-  </details>
+---
+
+## Exécution Pas à Pas
+
+### Étape 1 — Démarrer LocalStack
+
+```shell
+docker run -d -p 4566:4566 localstack/localstack
+```
+
+Vérifiez que LocalStack répond :
+
+```shell
+curl http://localhost:4566/_localstack/health
+```
+
+### Étape 2 — Exécuter les Commandes Terraform
+
+1. ***`terraform init`*** : *Initialiser* Terraform (télécharge également les modules locaux)
+2. ***`terraform validate`*** : *Valider* le code Terraform
+3. ***`terraform fmt`*** : *Formater* le code Terraform
+4. ***`terraform plan`*** : *Réviser* le plan Terraform
+5. ***`terraform apply`*** : *Créer* des Resources avec Terraform
+
+<details>
+<summary> <i>terraform apply</i> </summary>
+
+```shell
+$ terraform apply -auto-approve
+
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+# module.vpc_dev.aws_vpc.this will be created
++ resource "aws_vpc" "this" {
+    + cidr_block = "10.0.0.0/16"
+    + id         = (known after apply)
+    + tags       = {
+        + "Name"      = "MyVPC-Dev"
+        + "Owner"     = "Venkatesh"
+        + "Terraform" = "yes"
+      }
+  }
+
+# module.vpc_dev.aws_subnet.this will be created
++ resource "aws_subnet" "this" {
+    + availability_zone = "us-east-1a"
+    + cidr_block        = "10.0.1.0/24"
+    + id                = (known after apply)
+    + vpc_id            = (known after apply)
+  }
+
+# module.vpc_prod.aws_vpc.this will be created
++ resource "aws_vpc" "this" {
+    + cidr_block = "10.1.0.0/16"
+    + id         = (known after apply)
+    + tags       = {
+        + "Name"      = "MyVPC-Prod"
+        + "Owner"     = "Venkatesh"
+        + "Terraform" = "yes"
+      }
+  }
+
+# module.vpc_prod.aws_subnet.this will be created
++ resource "aws_subnet" "this" {
+    + availability_zone = "us-east-1b"
+    + cidr_block        = "10.1.1.0/24"
+    + id                = (known after apply)
+    + vpc_id            = (known after apply)
+  }
+
+Plan: 4 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + vpc_dev_id  = (known after apply)
+  + vpc_prod_id = (known after apply)
+
+module.vpc_dev.aws_vpc.this: Creating...
+module.vpc_dev.aws_vpc.this: Creation complete after 1s [id=vpc-0a1b2c3d4e5f00010]
+module.vpc_dev.aws_subnet.this: Creating...
+module.vpc_dev.aws_subnet.this: Creation complete after 1s [id=subnet-0a1b2c3d4e5f00010]
+module.vpc_prod.aws_vpc.this: Creating...
+module.vpc_prod.aws_vpc.this: Creation complete after 1s [id=vpc-0a1b2c3d4e5f00020]
+module.vpc_prod.aws_subnet.this: Creating...
+module.vpc_prod.aws_subnet.this: Creation complete after 1s [id=subnet-0a1b2c3d4e5f00020]
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+vpc_dev_id  = "vpc-0a1b2c3d4e5f00010"
+vpc_prod_id = "vpc-0a1b2c3d4e5f00020"
+```
+
+</details>
 
 **Avantages de l'Utilisation des Modules :**
 
@@ -292,3 +340,5 @@ output "vpc_prod_id" {
 Modules Terraform : https://developer.hashicorp.com/terraform/language/modules
 
 Terraform Registry : https://registry.terraform.io/
+
+LocalStack — Documentation officielle : https://docs.localstack.cloud/

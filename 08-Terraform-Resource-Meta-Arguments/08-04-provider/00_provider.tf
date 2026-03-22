@@ -1,35 +1,20 @@
 terraform {
   required_version = "~> 1.0"
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
   }
 }
 
-# Define First AWS Provider (us-east-1)
-provider "aws" {
-  region = "us-east-1"
-  alias  = "us-east-nv"
+# Meta-argument PROVIDER — deux providers aliasés
+# Simule deux régions AWS (eu-west-1 et ap-south-1)
 
-  default_tags {
-    tags = {
-      Terraform = "yes"
-      Region    = "N.Virginia"
-    }
-  }
+provider "local" {
+  alias = "project-europe"
 }
 
-# Defining Second AWS Provider (ap-south-1)
-provider "aws" {
-  region = "ap-south-1"
-  alias  = "ap-south-mumbai"
-
-  default_tags {
-    tags = {
-      Terraform = "yes"
-      Region    = "Mumbai"
-    }
-  }
+provider "local" {
+  alias = "project-asia"
 }

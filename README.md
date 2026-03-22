@@ -10,35 +10,28 @@ Ce dépôt est un support de formation **complet et progressif** pour apprendre 
 - **Démonstration** — fichiers `.tf` prêts à l'emploi
 - **Lab pratique** — scripts d'orchestration `lab-script.sh` (Linux/Mac) et `lab-script.ps1` (Windows)
 
-```
-Infrastructure as Code avec Terraform
-┌─────────────────────────────────────────────────────┐
-│  Écrire du HCL  →  terraform plan  →  terraform apply │
-│                                                       │
-│  Code versionné  →  Infrastructure reproductible      │
-└─────────────────────────────────────────────────────┘
-```
+![](C:\Users\DELL\Desktop\terraform-beginners-guide\imgs\iac-terraform.jpg)
 
 ## Prérequis
 
 ### Outils de base
 
-| Outil | Version | Statut | Installation |
-|-------|---------|--------|-------------|
-| [Terraform](https://developer.hashicorp.com/terraform/install) | ≥ 1.0 | ✅ Installé (v1.14.7) | `brew install terraform` / [installer](https://developer.hashicorp.com/terraform/install) |
-| [Git](https://git-scm.com/) | ≥ 2.0 | ✅ Installé | `brew install git` / `apt install git` |
-| [Docker](https://docs.docker.com/get-docker/) | ≥ 20.0 | ✅ Installé (v28.2.2) | `apt install docker.io` / [Docker Desktop](https://docs.docker.com/get-docker/) |
-| [LocalStack](https://localstack.cloud/) | ≥ 4.0 | ✅ Installé (v4.14.0) | `pip install localstack` |
-| [AWS CLI](https://aws.amazon.com/cli/) | ≥ 2.0 | ⚙️ Optionnel | `brew install awscli` / [installer](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) |
-| Compte AWS réel | — | ⚙️ Optionnel | [Créer un compte](https://aws.amazon.com/free/) |
+| Outil                                                          | Version | Statut               | Installation                                                                                                       |
+| -------------------------------------------------------------- | ------- | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| [Terraform](https://developer.hashicorp.com/terraform/install) | ≥ 1.0   | ✅ Installé (v1.14.7) | `brew install terraform` / [installer](https://developer.hashicorp.com/terraform/install)                          |
+| [Git](https://git-scm.com/)                                    | ≥ 2.0   | ✅ Installé           | `brew install git` / `apt install git`                                                                             |
+| [Docker](https://docs.docker.com/get-docker/)                  | ≥ 20.0  | ✅ Installé (v28.2.2) | `apt install docker.io` / [Docker Desktop](https://docs.docker.com/get-docker/)                                    |
+| [LocalStack](https://localstack.cloud/)                        | ≥ 4.0   | ✅ Installé (v4.14.0) | `pip install localstack`                                                                                           |
+| [AWS CLI](https://aws.amazon.com/cli/)                         | ≥ 2.0   | ⚙️ Optionnel         | `brew install awscli` / [installer](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) |
+| Compte AWS réel                                                | —       | ⚙️ Optionnel         | [Créer un compte](https://aws.amazon.com/free/)                                                                    |
 
 ### Outils pour études de cas avancées (module 22)
 
-| Outil | Version | Statut | Installation |
-|-------|---------|--------|-------------|
-| [kubectl](https://kubernetes.io/docs/tasks/tools/) | ≥ 1.28 | ⚙️ Optionnel | `brew install kubectl` / [installer](https://kubernetes.io/docs/tasks/tools/) |
-| [minikube](https://minikube.sigs.k8s.io/) | ≥ 1.30 | ⚙️ Optionnel | `brew install minikube` / [installer](https://minikube.sigs.k8s.io/docs/start/) |
-| [Ansible](https://docs.ansible.com/) | ≥ 2.15 | ⚙️ Optionnel | `pip install ansible` / `apt install ansible` |
+| Outil                                              | Version | Statut       | Installation                                                                    |
+| -------------------------------------------------- | ------- | ------------ | ------------------------------------------------------------------------------- |
+| [kubectl](https://kubernetes.io/docs/tasks/tools/) | ≥ 1.28  | ⚙️ Optionnel | `brew install kubectl` / [installer](https://kubernetes.io/docs/tasks/tools/)   |
+| [minikube](https://minikube.sigs.k8s.io/)          | ≥ 1.30  | ⚙️ Optionnel | `brew install minikube` / [installer](https://minikube.sigs.k8s.io/docs/start/) |
+| [Ansible](https://docs.ansible.com/)               | ≥ 2.15  | ⚙️ Optionnel | `pip install ansible` / `apt install ansible`                                   |
 
 > **Note :** Les labs 06 à 20 utilisent **LocalStack** pour simuler AWS localement — aucun compte AWS ni credentials réels ne sont nécessaires pour suivre ce support.
 
@@ -80,17 +73,7 @@ provider "aws" {
 
 ## Parcours d'Apprentissage
 
-```
-NIVEAU DÉBUTANT                    NIVEAU INTERMÉDIAIRE             NIVEAU AVANCÉ
-      │                                    │                              │
-  ┌───▼───┐   ┌──────────┐   ┌────────┐  ┌▼──────────┐  ┌──────────┐  ┌▼──────────┐
-  │ 00-01 │──▶│  03-05   │──▶│ 06-07  │─▶│  08-11   │─▶│  12-16   │─▶│  17-22   │
-  │Bases  │   │Concepts  │   │  VPC   │  │Meta-args │  │State &   │  │Modules & │
-  │Install│   │Blocs,Cmds│   │  Demo  │  │Variables │  │Workspaces│  │Import... │
-  └───────┘   └──────────┘   └────────┘  └──────────┘  └──────────┘  └──────────┘
-```
-
----
+![](C:\Users\DELL\Desktop\terraform-beginners-guide\imgs\learning-path.jpg)
 
 ## Contenu des Modules
 
@@ -176,36 +159,7 @@ NIVEAU DÉBUTANT                    NIVEAU INTERMÉDIAIRE             NIVEAU AVA
 
 ## Structure du Dépôt
 
-```
-terraform-beginners-guide/
-├── 00-Terraform-Basics/          # Fondamentaux IaC
-├── 01-Terraform-Installation/    # Installation multi-OS
-├── 03-Terraform-Terminologies/   # Glossaire
-├── 04-Terraform-Top-Level-Blocks/# Blocs HCL fondamentaux
-├── 05-Terraform-Commands/        # CLI référence
-├── 06-Terraform-VPC-Demo/        # Lab VPC AWS complet
-├── 07-Terraform-Resources/       # Resources et dépendances
-├── 08-Terraform-Resource-Meta-Arguments/  # count, for_each...
-├── 09-Terraform-Variables/       # Types de variables
-├── 10-Terraform-Outputs/         # Outputs et sensibilité
-├── 11-Terraform-Data-Sources/    # Interroger l'infra existante
-├── 12-Terraform-State/           # State local et distant (S3)
-├── 13-Terraform-Show/            # Inspection du state et plans
-├── 14-Terraform-Refresh/         # Synchronisation du state
-├── 15-Terraform-State-Commands/  # Commandes state avancées
-├── 16-Terraform-Workspaces/      # Multi-environnements
-├── 17-Terraform-Modules/         # Modules réutilisables
-├── 18-Terraform-Import/          # Import de ressources existantes
-├── 19-Terraform-Debug/           # Logs et debugging
-├── 20-Terraform-provisioners/    # Provisioners local/remote
-├── 21-Terraform-Exam-Cheat-Sheet/# Préparation certification
-└── 22-Terraform-Example-Codes/   # Providers Docker, K8s, Ansible...
-    ├── 01-local-provider/
-    ├── 02-localstack/
-    ├── 03-docker/
-    ├── 04-kubernetes/
-    └── 05-ansible/
-```
+![](C:\Users\DELL\Desktop\terraform-beginners-guide\imgs\guide-arborescence.jpg)
 
 ---
 

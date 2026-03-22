@@ -1,4 +1,3 @@
-# variable_name = "new_value"
-
-ec2_instance_type = "t3.small"
-owner             = "Amar"
+environment    = "staging"
+owner          = "Alice"
+instance_count = 2

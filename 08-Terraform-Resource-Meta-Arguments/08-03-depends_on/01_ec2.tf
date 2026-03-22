@@ -1,9 +1,9 @@
-resource "aws_instance" "my-web-ec2" {
-  ami           = "ami-0df435f331839b2d6"
-  instance_type = "t2.micro"
+resource "random_pet" "server" {
+  length = 2
+  prefix = "web"
+}
 
-  tags = {
-    Name  = "linux-webserver"
-    Owner = "Venkatesh"
-  }
+resource "local_file" "server_config" {
+  filename = "${path.module}/output/server.conf"
+  content  = "SERVER_NAME=${random_pet.server.id}\nSTATUS=running"
 }

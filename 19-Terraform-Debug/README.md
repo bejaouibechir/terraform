@@ -1,5 +1,7 @@
 # Terraform Debug
 
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
+
 ## Bases du Debug Terraform
 
 - Le Debug Terraform est une fonctionnalité qui vous permet de **dépanner et diagnostiquer les problèmes avec vos configurations et votre state Terraform**.
@@ -16,7 +18,7 @@ Les niveaux sont ordonnés du plus détaillé au moins détaillé :
 
 | Niveau      | Description                                                                             |
 | ----------- | --------------------------------------------------------------------------------------- |
-| **`TRACE`** | Journalisation la plus détaillée — requêtes/réponses API complètes, opérations internes |
+| **`TRACE`** | Journalisation la plus détaillée — communications provider complètes, opérations internes |
 | **`DEBUG`** | Informations détaillées sur les actions et décisions de Terraform                       |
 | **`INFO`**  | Informations de haut niveau sur ce que fait Terraform                                   |
 | **`WARN`**  | Messages d'avertissement — problèmes potentiels ou erreurs non fatales                  |
@@ -26,43 +28,51 @@ Les niveaux sont ordonnés du plus détaillé au moins détaillé :
 
 ## Exemple Pratique
 
-Utilisons un VPC simple pour observer la journalisation Terraform à différents niveaux.
+Ce module utilise les providers `random` et `local` pour créer un nom aléatoire et un fichier de debug — sans aucune credential requise.
+
+### Structure des Fichiers
+
+```
+19-Terraform-Debug/
+├── 00_provider.tf
+├── 01_variables.tf
+├── 02_vpc.tf
+├── 03_outputs.tf
+└── output/
+    └── debug.txt    (créé par Terraform)
+```
 
 [00_provider.tf](./00_provider.tf)
 
 ```hcl
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
     }
   }
 }
 
-provider "aws" {
-  region = var.aws_region
-
-  default_tags {
-    tags = {
-      Terraform = "yes"
-      Owner     = var.owner
-    }
-  }
-}
+provider "local" {}
+provider "random" {}
 ```
 
 [01_variables.tf](./01_variables.tf)
 
 ```hcl
-variable "aws_region" {
-  description = "Région AWS dans laquelle les resources seront créées"
+variable "environment" {
+  description = "Nom de l'environnement"
   type        = string
-  default     = "us-east-1"
+  default     = "dev"
 }
 
 variable "owner" {
-  description = "Nom de l'ingénieur qui crée les resources"
+  description = "Nom de l'ingénieur responsable"
   type        = string
   default     = "Venkatesh"
 }
@@ -71,21 +81,32 @@ variable "owner" {
 [02_vpc.tf](./02_vpc.tf)
 
 ```hcl
-resource "aws_vpc" "myvpc" {
-  cidr_block = "10.0.0.0/16"
+resource "random_pet" "resource_name" {
+  length = 2
+  prefix = var.environment
+}
 
-  tags = {
-    Name = "MyVPC-Debug"
-  }
+resource "random_id" "resource_id" {
+  byte_length = 4
+}
+
+resource "local_file" "debug_output" {
+  filename = "${path.module}/output/debug.txt"
+  content  = "RESOURCE=${random_pet.resource_name.id}\nID=${random_id.resource_id.hex}\nOWNER=${var.owner}"
 }
 ```
 
 [03_outputs.tf](./03_outputs.tf)
 
 ```hcl
-output "vpc_id" {
-  description = "ID du VPC créé"
-  value       = aws_vpc.myvpc.id
+output "resource_name" {
+  description = "Nom de la ressource créée"
+  value       = random_pet.resource_name.id
+}
+
+output "resource_id" {
+  description = "ID unique de la ressource"
+  value       = random_id.resource_id.hex
 }
 ```
 
@@ -134,7 +155,7 @@ terraform destroy -auto-approve
 ```
 
 <details>
-<summary> <i>terraform init (avec TRACE)</i> </summary>
+<summary><i>terraform init (avec TRACE)</i></summary>
 
 ```shell
 $ terraform init
@@ -143,19 +164,20 @@ $ terraform init
 2024-01-15T10:23:01.457+0100 [INFO]  CLI args: []string{"terraform", "init"}
 2024-01-15T10:23:01.458+0100 [TRACE] Stdout is a terminal of width 220
 2024-01-15T10:23:01.458+0100 [TRACE] Stderr is a terminal of width 220
-2024-01-15T10:23:01.458+0100 [TRACE] Stdin is a terminal
 2024-01-15T10:23:01.459+0100 [DEBUG] Attempting to open CLI config file: /home/user/.terraformrc
 2024-01-15T10:23:01.460+0100 [DEBUG] No config file found; using default settings
-2024-01-15T10:23:01.461+0100 [TRACE] Finding hashicorp/aws versions matching "~> 5.0"...
-2024-01-15T10:23:02.105+0100 [DEBUG] GET https://registry.terraform.io/v1/providers/hashicorp/aws/versions
+2024-01-15T10:23:01.461+0100 [TRACE] Finding hashicorp/random versions matching "~> 3.0"...
+2024-01-15T10:23:02.105+0100 [DEBUG] GET https://registry.terraform.io/v1/providers/hashicorp/random/versions
 2024-01-15T10:23:02.890+0100 [TRACE] HTTP response received: status=200
-2024-01-15T10:23:02.891+0100 [INFO]  Installing hashicorp/aws v5.31.0...
+2024-01-15T10:23:02.891+0100 [INFO]  Installing hashicorp/random v3.6.0...
+2024-01-15T10:23:03.200+0100 [INFO]  Installing hashicorp/local v2.4.0...
 
 Initializing the backend...
 Initializing provider plugins...
-- Finding hashicorp/aws versions matching "~> 5.0"...
-- Installing hashicorp/aws v5.31.0...
-- Installed hashicorp/aws v5.31.0 (signed by HashiCorp)
+- Finding hashicorp/random versions matching "~> 3.0"...
+- Finding hashicorp/local versions matching "~> 2.0"...
+- Installing hashicorp/random v3.6.0...
+- Installing hashicorp/local v2.4.0...
 
 Terraform has been successfully initialized!
 ```
@@ -163,26 +185,35 @@ Terraform has been successfully initialized!
 </details>
 
 <details>
-<summary> <i>terraform apply -auto-approve (avec TRACE)</i> </summary>
+<summary><i>terraform apply -auto-approve (avec TRACE)</i></summary>
 
 ```shell
 $ terraform apply -auto-approve
 2024-01-15T10:24:15.123+0100 [INFO]  CLI args: []string{"terraform", "apply", "-auto-approve"}
 2024-01-15T10:24:15.124+0100 [TRACE] Acquiring state lock
-2024-01-15T10:24:15.200+0100 [DEBUG] Building AWS client config for region: us-east-1
-2024-01-15T10:24:15.850+0100 [TRACE] POST https://ec2.us-east-1.amazonaws.com/
-2024-01-15T10:24:15.851+0100 [TRACE] Request body: Action=CreateVpc&CidrBlock=10.0.0.0%2F16&...
-2024-01-15T10:24:18.320+0100 [TRACE] HTTP response received: status=200
-2024-01-15T10:24:18.321+0100 [DEBUG] aws_vpc.myvpc: Creation complete [id=vpc-0ab12cd34ef567890]
-2024-01-15T10:24:18.322+0100 [TRACE] Releasing state lock
+2024-01-15T10:24:15.200+0100 [DEBUG] provider.terraform-provider-random: configuring provider
+2024-01-15T10:24:15.201+0100 [DEBUG] provider.terraform-provider-local: configuring provider
+2024-01-15T10:24:15.300+0100 [TRACE] random_pet.resource_name: applying "create" change
+2024-01-15T10:24:15.301+0100 [DEBUG] random_pet.resource_name: Creation complete [id=dev-swift-fox]
+2024-01-15T10:24:15.302+0100 [TRACE] random_id.resource_id: applying "create" change
+2024-01-15T10:24:15.303+0100 [DEBUG] random_id.resource_id: Creation complete [id=a4f1c83e]
+2024-01-15T10:24:15.400+0100 [TRACE] local_file.debug_output: applying "create" change
+2024-01-15T10:24:15.401+0100 [DEBUG] local_file.debug_output: Creation complete
+2024-01-15T10:24:15.402+0100 [TRACE] Releasing state lock
 
-aws_vpc.myvpc: Creating...
-aws_vpc.myvpc: Creation complete after 3s [id=vpc-0ab12cd34ef567890]
+random_pet.resource_name: Creating...
+random_pet.resource_name: Creation complete after 0s [id=dev-swift-fox]
+random_id.resource_id: Creating...
+random_id.resource_id: Creation complete after 0s [id=a4f1c83e]
+local_file.debug_output: Creating...
+local_file.debug_output: Creation complete after 0s [id=...]
 
-Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
 
 Outputs:
-vpc_id = "vpc-0ab12cd34ef567890"
+
+resource_id   = "a4f1c83e"
+resource_name = "dev-swift-fox"
 ```
 
 </details>
@@ -200,24 +231,27 @@ tail -50 terraform-trace.log
 # Rechercher les erreurs dans les logs
 grep "ERROR\|WARN" terraform-trace.log
 
-# Rechercher les appels API AWS
-grep "POST\|GET\|PUT\|DELETE" terraform-trace.log
+# Rechercher les opérations de création
+grep "Creation complete\|applying" terraform-trace.log
 ```
 
 <details>
-<summary> <i>Exemple de contenu terraform-trace.log</i> </summary>
+<summary><i>Exemple de contenu terraform-trace.log</i></summary>
 
 ```shell
 2024-01-15T10:24:15.123+0100 [INFO]  Terraform version: 1.6.6
 2024-01-15T10:24:15.124+0100 [TRACE] Acquiring state lock
-2024-01-15T10:24:15.200+0100 [DEBUG] Building AWS client config for region: us-east-1
-2024-01-15T10:24:15.201+0100 [TRACE] AWS credentials found via environment variables
-2024-01-15T10:24:15.850+0100 [TRACE] POST https://ec2.us-east-1.amazonaws.com/
-2024-01-15T10:24:15.851+0100 [TRACE] Request body: Action=CreateVpc&CidrBlock=10.0.0.0%2F16
-2024-01-15T10:24:18.320+0100 [TRACE] HTTP response received: status=200
-2024-01-15T10:24:18.321+0100 [DEBUG] aws_vpc.myvpc: applying "create" change
-2024-01-15T10:24:18.322+0100 [INFO]  aws_vpc.myvpc: Creation complete [id=vpc-0ab12cd34ef567890]
-2024-01-15T10:24:18.323+0100 [TRACE] Releasing state lock
+2024-01-15T10:24:15.200+0100 [DEBUG] provider.terraform-provider-random: configuring provider
+2024-01-15T10:24:15.201+0100 [TRACE] random_pet.resource_name: starting apply
+2024-01-15T10:24:15.300+0100 [DEBUG] random_pet.resource_name: applying "create" change
+2024-01-15T10:24:15.301+0100 [INFO]  random_pet.resource_name: Creation complete [id=dev-swift-fox]
+2024-01-15T10:24:15.302+0100 [TRACE] random_id.resource_id: starting apply
+2024-01-15T10:24:15.303+0100 [DEBUG] random_id.resource_id: applying "create" change
+2024-01-15T10:24:15.304+0100 [INFO]  random_id.resource_id: Creation complete [id=a4f1c83e]
+2024-01-15T10:24:15.400+0100 [TRACE] local_file.debug_output: starting apply
+2024-01-15T10:24:15.401+0100 [DEBUG] local_file.debug_output: writing file ./output/debug.txt
+2024-01-15T10:24:15.402+0100 [INFO]  local_file.debug_output: Creation complete
+2024-01-15T10:24:15.403+0100 [TRACE] Releasing state lock
 ```
 
 </details>
@@ -229,6 +263,10 @@ grep "POST\|GET\|PUT\|DELETE" terraform-trace.log
 Vous pouvez ajuster le niveau selon votre besoin. Pour un diagnostic moins verbeux :
 
 ```shell
+# Niveau DEBUG : informations détaillées sans les communications internes
+export TF_LOG=DEBUG
+terraform plan
+
 # Niveau INFO : uniquement les informations importantes
 export TF_LOG=INFO
 terraform plan
@@ -347,4 +385,6 @@ github.com/hashicorp/terraform/...
 
 ## Références :
 
-https://developer.hashicorp.com/terraform/internals/debugging
+- [Terraform Debugging](https://developer.hashicorp.com/terraform/internals/debugging)
+- [Provider random](https://registry.terraform.io/providers/hashicorp/random/latest/docs)
+- [Provider local](https://registry.terraform.io/providers/hashicorp/local/latest/docs)

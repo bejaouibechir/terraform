@@ -1,11 +1,3 @@
-resource "aws_instance" "example" {
-  ami           = "ami-0df435f331839b2d6"
-  instance_type = "t2.micro"
-
-  tags = {
-    Name  = "Linux2023"
-    Owner = "Venkatesh"
-  }
-}
-
-
+# Ce fichier a été remplacé par 01_resources.tf
+# Les ressources sont maintenant définies dans 01_resources.tf
+# en utilisant les providers légers : local, random (sans credentials AWS)

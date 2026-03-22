@@ -1,16 +1,19 @@
+> ⚙️ Ce lab utilise **LocalStack** — aucune credential AWS réelle requise.
+
 # Terraform Import
 
 ## Intégrer votre Infrastructure Existante sous IaC
 
 - La commande **`terraform import`** est utilisée pour **importer une infrastructure existante dans votre state Terraform**.
 - **`terraform import`** vous permet de **placer des resources sous gestion Terraform sans avoir à les recréer**.
-- Cas d'usage typique : votre équipe a créé des resources manuellement (via la Console AWS, CLI, etc.) **avant** d'adopter Terraform — vous souhaitez maintenant les gérer via IaC sans interruption de service.
+- Cas d'usage typique : votre équipe a créé des resources manuellement (via CLI, scripts, ou d'autres outils) **avant** d'adopter Terraform — vous souhaitez maintenant les gérer via IaC sans interruption de service.
+- Dans ce lab, la resource "existante" est un VPC créé directement dans LocalStack via `awslocal`, l'outil CLI dédié à LocalStack.
 
 ## Étapes du Workflow d'Import
 
 | Étape | Action                                                                          |
 | ----- | ------------------------------------------------------------------------------- |
-| 1     | **Identifier** la resource existante et récupérer son ID unique                 |
+| 1     | **Créer** la resource manuellement dans LocalStack et récupérer son ID unique   |
 | 2     | **Déclarer** un bloc resource vide dans un fichier `.tf`                        |
 | 3     | **Exécuter** `terraform import` pour importer la resource dans le state         |
 | 4     | **Inspecter** le state avec `terraform show` pour récupérer les attributs réels |
@@ -21,7 +24,7 @@
 
 ## Exemple Pratique : Import d'un VPC Existant
 
-**Scénario** : Un VPC a été créé manuellement depuis la Console AWS. Nous souhaitons le placer sous gestion Terraform.
+**Scénario** : Un VPC a été créé directement dans LocalStack (sans Terraform). Nous souhaitons le placer sous gestion Terraform.
 
 [00_provider.tf](./00_provider.tf)
 
@@ -35,8 +38,25 @@ terraform {
   }
 }
 
+# ---------------------------------------------------------------------------
+# Provider AWS — LocalStack (simulation locale, aucune credential AWS réelle)
+# LocalStack doit être lancé : docker run -d -p 4566:4566 localstack/localstack
+# ---------------------------------------------------------------------------
 provider "aws" {
   region = var.aws_region
+
+  access_key                  = "test"
+  secret_key                  = "test"
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+
+  endpoints {
+    ec2 = "http://localhost:4566"
+    s3  = "http://localhost:4566"
+    iam = "http://localhost:4566"
+    sts = "http://localhost:4566"
+  }
 
   default_tags {
     tags = {
@@ -86,29 +106,66 @@ output "vpc_arn" {
 
 ## Exécution Pas à Pas
 
-### Étape 1 — Identifier la Resource Existante
-
-- Récupérez l'**ID unique** du VPC existant depuis la Console AWS ou via la CLI AWS :
+### Étape 1 — Démarrer LocalStack
 
 ```shell
-aws ec2 describe-vpcs --query "Vpcs[*].{ID:VpcId,CIDR:CidrBlock,Name:Tags[?Key=='Name']|[0].Value}" --output table
+docker run -d -p 4566:4566 localstack/localstack
+```
+
+Vérifiez que LocalStack répond :
+
+```shell
+curl http://localhost:4566/_localstack/health
+```
+
+### Étape 2 — Créer le VPC manuellement dans LocalStack
+
+Utilisez `awslocal` (wrapper CLI de LocalStack autour d'`awscli`) pour créer un VPC directement dans LocalStack, **sans Terraform** :
+
+```shell
+awslocal ec2 create-vpc --cidr-block 10.0.0.0/16
+```
+
+<details>
+<summary> <i>awslocal ec2 create-vpc</i> </summary>
+
+```shell
+$ awslocal ec2 create-vpc --cidr-block 10.0.0.0/16
+{
+    "Vpc": {
+        "CidrBlock": "10.0.0.0/16",
+        "VpcId": "vpc-0a1b2c3d4e5f00042",
+        "State": "available",
+        "DhcpOptionsId": "dopt-00000000",
+        "InstanceTenancy": "default",
+        "IsDefault": false
+    }
+}
+```
+
+</details>
+
+- Notez l'ID retourné : **`vpc-0a1b2c3d4e5f00042`**
+
+Vous pouvez également lister les VPCs existants dans LocalStack :
+
+```shell
+awslocal ec2 describe-vpcs --query "Vpcs[*].{ID:VpcId,CIDR:CidrBlock}" --output table
 ```
 
 ```shell
----------------------------------------------------
-|               DescribeVpcs                      |
-+------------------+----------------+-------------+
-|       CIDR       |      ID        |    Name     |
-+------------------+----------------+-------------+
-|  10.0.0.0/16     | vpc-0ab12cd34ef567890 | MyVPC-Existing |
-+------------------+----------------+-------------+
+----------------------------------------------
+|              DescribeVpcs                  |
++----------------------+---------------------+
+|        CIDR          |         ID          |
++----------------------+---------------------+
+|  10.0.0.0/16         | vpc-0a1b2c3d4e5f00042 |
++----------------------+---------------------+
 ```
-
-- Notez l'ID : **`vpc-0ab12cd34ef567890`**
 
 ---
 
-### Étape 2 — Initialiser Terraform et Déclarer un Bloc Vide
+### Étape 3 — Initialiser Terraform et Déclarer un Bloc Vide
 
 ```shell
 terraform init
@@ -126,24 +183,24 @@ resource "aws_vpc" "imported" {
 
 ---
 
-### Étape 3 — Exécuter `terraform import`
+### Étape 4 — Exécuter `terraform import`
 
-- Exécutez la commande `terraform import` en précisant **le type de resource**, **le nom local** et **l'ID AWS** :
+Exécutez la commande `terraform import` en précisant **le type de resource**, **le nom local** et **l'ID LocalStack** :
 
 ```shell
-terraform import aws_vpc.imported vpc-0ab12cd34ef567890
+terraform import aws_vpc.imported vpc-0a1b2c3d4e5f00042
 ```
 
 <details>
 <summary> <i>terraform import</i> </summary>
 
 ```shell
-$ terraform import aws_vpc.imported vpc-0ab12cd34ef567890
+$ terraform import aws_vpc.imported vpc-0a1b2c3d4e5f00042
 
-aws_vpc.imported: Importing from ID "vpc-0ab12cd34ef567890"...
+aws_vpc.imported: Importing from ID "vpc-0a1b2c3d4e5f00042"...
 aws_vpc.imported: Import prepared!
   Prepared aws_vpc for import
-aws_vpc.imported: Refreshing state... [id=vpc-0ab12cd34ef567890]
+aws_vpc.imported: Refreshing state... [id=vpc-0a1b2c3d4e5f00042]
 
 Import successful!
 
@@ -157,9 +214,9 @@ your Terraform state and will henceforth be managed by Terraform.
 
 ---
 
-### Étape 4 — Inspecter le State avec `terraform show`
+### Étape 5 — Inspecter le State avec `terraform show`
 
-- Utilisez `terraform show` pour afficher tous les **attributs réels** du VPC importé :
+Utilisez `terraform show` pour afficher tous les **attributs réels** du VPC importé depuis LocalStack :
 
 ```shell
 terraform show
@@ -172,21 +229,21 @@ terraform show
 $ terraform show
 # aws_vpc.imported:
 resource "aws_vpc" "imported" {
-    arn                                  = "arn:aws:ec2:us-east-1:520974589522:vpc/vpc-0ab12cd34ef567890"
+    arn                                  = "arn:aws:ec2:us-east-1:000000000000:vpc/vpc-0a1b2c3d4e5f00042"
     assign_generated_ipv6_cidr_block     = false
     cidr_block                           = "10.0.0.0/16"
-    default_network_acl_id               = "acl-0a1b2c3d4e5f67890"
-    default_route_table_id               = "rtb-0a1b2c3d4e5f67890"
-    default_security_group_id            = "sg-0a1b2c3d4e5f67890"
-    dhcp_options_id                      = "dopt-7c9cef04"
+    default_network_acl_id               = "acl-00000000"
+    default_route_table_id               = "rtb-00000000"
+    default_security_group_id            = "sg-00000000"
+    dhcp_options_id                      = "dopt-00000000"
     enable_dns_hostnames                 = false
     enable_dns_support                   = true
     enable_network_address_usage_metrics = false
-    id                                   = "vpc-0ab12cd34ef567890"
+    id                                   = "vpc-0a1b2c3d4e5f00042"
     instance_tenancy                     = "default"
     ipv6_netmask_length                  = 0
-    main_route_table_id                  = "rtb-0a1b2c3d4e5f67890"
-    owner_id                             = "520974589522"
+    main_route_table_id                  = "rtb-00000000"
+    owner_id                             = "000000000000"
     tags                                 = {
         "Name" = "MyVPC-Existing"
     }
@@ -200,13 +257,24 @@ resource "aws_vpc" "imported" {
 
 </details>
 
+> L'`owner_id` `000000000000` est l'identifiant de compte fictif utilisé par LocalStack.
+
 ---
 
-### Étape 5 — Mettre à Jour le Fichier `02_vpc.tf`
+### Étape 6 — Mettre à Jour le Fichier `02_vpc.tf`
 
-- En vous basant sur la sortie de `terraform show`, **renseignez le bloc resource** avec les attributs réels du VPC importé :
+En vous basant sur la sortie de `terraform show`, **renseignez le bloc resource** avec les attributs réels du VPC importé. Le fichier [02_vpc.tf](./02_vpc.tf) final correspond à :
 
 ```hcl
+# Étape 1 - Déclaration vide avant l'import
+# (bloc vide requis avant d'exécuter terraform import)
+#
+# resource "aws_vpc" "imported" {
+#
+# }
+
+# Étape 2 - Configuration complète après l'import et terraform show
+# (à renseigner manuellement après avoir exécuté terraform show)
 resource "aws_vpc" "imported" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
@@ -219,13 +287,13 @@ resource "aws_vpc" "imported" {
 }
 ```
 
-> **Remarque :** Renseignez uniquement les attributs **configurables** (arguments). Les attributs calculés par AWS (`id`, `arn`, `owner_id`, etc.) sont gérés automatiquement par Terraform et ne doivent pas figurer dans le bloc resource.
+> **Remarque :** Renseignez uniquement les attributs **configurables** (arguments). Les attributs calculés par LocalStack (`id`, `arn`, `owner_id`, etc.) sont gérés automatiquement par Terraform et ne doivent pas figurer dans le bloc resource.
 
 ---
 
-### Étape 6 — Vérifier avec `terraform plan`
+### Étape 7 — Vérifier avec `terraform plan`
 
-- Exécutez `terraform plan` pour confirmer que Terraform ne détecte **aucun changement** entre votre configuration et l'infrastructure réelle :
+Exécutez `terraform plan` pour confirmer que Terraform ne détecte **aucun changement** entre votre configuration et l'infrastructure dans LocalStack :
 
 ```shell
 terraform plan
@@ -236,7 +304,7 @@ terraform plan
 
 ```shell
 $ terraform plan
-aws_vpc.imported: Refreshing state... [id=vpc-0ab12cd34ef567890]
+aws_vpc.imported: Refreshing state... [id=vpc-0a1b2c3d4e5f00042]
 
 No changes. Your infrastructure matches the configuration.
 
@@ -246,12 +314,9 @@ and found no differences, so no changes are needed.
 
 </details>
 
-- Le message ***No changes*** confirme que votre fichier `.tf` correspond exactement à l'infrastructure existante.
-- Le VPC est maintenant **entièrement géré par Terraform**.
-
 ---
 
-### Étape 7 — Appliquer et Vérifier les Outputs
+### Étape 8 — Appliquer et Vérifier les Outputs
 
 ```shell
 terraform apply
@@ -262,7 +327,7 @@ terraform apply
 
 ```shell
 $ terraform apply
-aws_vpc.imported: Refreshing state... [id=vpc-0ab12cd34ef567890]
+aws_vpc.imported: Refreshing state... [id=vpc-0a1b2c3d4e5f00042]
 
 No changes. Your infrastructure matches the configuration.
 
@@ -270,12 +335,15 @@ Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-vpc_arn  = "arn:aws:ec2:us-east-1:520974589522:vpc/vpc-0ab12cd34ef567890"
+vpc_arn  = "arn:aws:ec2:us-east-1:000000000000:vpc/vpc-0a1b2c3d4e5f00042"
 vpc_cidr = "10.0.0.0/16"
-vpc_id   = "vpc-0ab12cd34ef567890"
+vpc_id   = "vpc-0a1b2c3d4e5f00042"
 ```
 
 </details>
+
+- Le message ***No changes*** confirme que votre fichier `.tf` correspond exactement à l'infrastructure dans LocalStack.
+- Le VPC est maintenant **entièrement géré par Terraform**.
 
 ---
 
@@ -290,21 +358,27 @@ vpc_id   = "vpc-0ab12cd34ef567890"
 ## Récapitulatif
 
 ```shell
-# 1. Initialiser Terraform
+# 1. Démarrer LocalStack
+docker run -d -p 4566:4566 localstack/localstack
+
+# 2. Créer le VPC dans LocalStack (simulation d'une resource pré-existante)
+awslocal ec2 create-vpc --cidr-block 10.0.0.0/16
+
+# 3. Initialiser Terraform
 terraform init
 
-# 2. Déclarer un bloc vide dans 02_vpc.tf, puis importer
+# 4. Déclarer un bloc vide dans 02_vpc.tf, puis importer
 terraform import aws_vpc.imported <VPC_ID>
 
-# 3. Inspecter les attributs importés
+# 5. Inspecter les attributs importés
 terraform show
 
-# 4. Mettre à jour 02_vpc.tf avec la configuration complète
+# 6. Mettre à jour 02_vpc.tf avec la configuration complète
 
-# 5. Vérifier qu'il n'y a aucun changement
+# 7. Vérifier qu'il n'y a aucun changement
 terraform plan
 
-# 6. Appliquer pour confirmer la gestion Terraform
+# 8. Appliquer pour confirmer la gestion Terraform
 terraform apply
 ```
 
@@ -313,3 +387,7 @@ terraform apply
 https://developer.hashicorp.com/terraform/cli/import
 
 https://developer.hashicorp.com/terraform/cli/import/usage
+
+https://docs.localstack.cloud/
+
+https://github.com/localstack/awscli-local

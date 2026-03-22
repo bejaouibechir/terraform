@@ -1,11 +1,24 @@
-resource "aws_db_instance" "myrds" {
-  allocated_storage    = 5
-  db_name              = "mydb"
-  engine               = "mysql"
-  engine_version       = "5.7"
-  instance_class       = "db.t2.micro"
-  username             = var.db_username
-  password             = var.db_password
-  parameter_group_name = "default.mysql5.7"
-  skip_final_snapshot  = true
+# Variables sensibles — démontre sensitive = true
+# Les valeurs ne s'affichent pas dans les logs terraform apply/output
+
+resource "random_password" "db_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%"
+}
+
+resource "local_sensitive_file" "db_config" {
+  filename = "${path.module}/output/db.conf"
+  content  = <<-EOT
+    DB_HOST=localhost
+    DB_USER=${var.db_username}
+    DB_PASSWORD=${var.db_password != "" ? var.db_password : random_password.db_password.result}
+    DB_NAME=myapp
+  EOT
+}
+
+output "db_password_generated" {
+  description = "Mot de passe généré (sensible — masqué dans les logs)"
+  value       = random_password.db_password.result
+  sensitive   = true
 }

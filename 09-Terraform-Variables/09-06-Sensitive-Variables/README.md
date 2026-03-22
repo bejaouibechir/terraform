@@ -1,205 +1,191 @@
-# Variables Terraform
+# Variables Terraform — Variables sensibles (`sensitive = true`)
 
-## Variables d'Entrée Sensibles
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
 
-- Pour gérer les variables d'entrée sensibles dans Terraform, vous pouvez utiliser l'argument ***`sensitive`*** dans le bloc de variable
-- En définissant ***`sensitive = true`***, vous indiquez que la valeur de cette variable est sensible, et Terraform la traitera en conséquence.
-- **Terraform n'affichera pas les valeurs réelles des variables sensibles** dans la console ou les logs lors des opérations *plan* ou *apply*. Il affichera à la place un espace réservé ***`(sensitive value)`***
-- Si une variable sensible est utilisée dans une valeur `output`, **la sortie sera également traitée comme sensible**, et sa valeur ne sera pas affichée.
-- **Remarque Importante :** Bien que Terraform aide à la visibilité et à la protection des données sensibles, vous devez toujours suivre les meilleures pratiques pour la gestion des secrets, comme l'utilisation d'un système de gestion des secrets (AWS Secret Manager), la restriction de l'accès aux informations sensibles et ne pas coder les secrets en dur dans vos fichiers de configuration.
+## Variables d'entrée sensibles
 
+Pour gérer les variables d'entrée sensibles dans Terraform, utilisez l'argument **`sensitive = true`** dans le bloc `variable`.
 
+- En définissant `sensitive = true`, vous indiquez que la valeur de cette variable est sensible, et Terraform la traitera en conséquence.
+- **Terraform n'affichera pas les valeurs réelles** des variables sensibles dans la console ou les logs lors des opérations `plan` ou `apply`. Il affichera à la place `(sensitive value)`.
+- Si une variable sensible est utilisée dans un bloc `output`, **la sortie sera également traitée comme sensible**, et sa valeur ne sera pas affichée sans l'option `--show-sensitive`.
+- **Remarque importante :** Bien que Terraform aide à la visibilité et à la protection des données sensibles, vous devez toujours suivre les meilleures pratiques pour la gestion des secrets. Le fichier d'état Terraform (`terraform.tfstate`) **stocke les valeurs sensibles en texte clair** — protégez l'accès à ce fichier.
 
-- **Exemple** :
+---
 
-    [00_provider.tf](./00_provider.tf)
-    ```hcl
-    terraform {
-    required_providers {
-        aws = {
-        source  = "hashicorp/aws"
-        version = "~> 5.0"
-        }
+## Fichiers du lab
+
+**`00_provider.tf`**
+
+```hcl
+terraform {
+  required_providers {
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
+provider "local" {}
+provider "random" {}
+```
+
+**`01_rds.tf`**
+
+```hcl
+# Variables sensibles — démontre sensitive = true
+# Les valeurs ne s'affichent pas dans les logs terraform apply/output
+
+resource "random_password" "db_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%"
+}
+
+resource "local_sensitive_file" "db_config" {
+  filename = "${path.module}/output/db.conf"
+  content  = <<-EOT
+    DB_HOST=localhost
+    DB_USER=${var.db_username}
+    DB_PASSWORD=${var.db_password != "" ? var.db_password : random_password.db_password.result}
+    DB_NAME=myapp
+  EOT
+}
+
+output "db_password_generated" {
+  description = "Mot de passe généré (sensible — masqué dans les logs)"
+  value       = random_password.db_password.result
+  sensitive   = true
+}
+```
+
+Deux ressources sont créées :
+
+1. `random_password.db_password` — génère un mot de passe aléatoire de 16 caractères avec des caractères spéciaux parmi `!#$%`.
+2. `local_sensitive_file.db_config` — écrit un fichier de configuration de base de données. Si `var.db_password` est vide, le mot de passe généré est utilisé.
+
+**`02_variables.tf`**
+
+```hcl
+variable "db_username" {
+  description = "Nom d'utilisateur base de données"
+  type        = string
+  sensitive   = true
+  default     = "admin"
+}
+
+variable "db_password" {
+  description = "Mot de passe base de données (laisser vide pour générer automatiquement)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+```
+
+Les deux variables sont déclarées avec `sensitive = true` :
+
+- `db_username` — identifiant de connexion (valeur par défaut : `"admin"`).
+- `db_password` — mot de passe. Si laissé vide (`""`), `random_password` génère automatiquement un mot de passe sécurisé.
+
+---
+
+## Comportement de `sensitive = true`
+
+### Pendant `terraform plan` et `terraform apply`
+
+Les valeurs sensibles sont remplacées par `(sensitive value)` :
+
+```
+  # local_sensitive_file.db_config will be created
+  + resource "local_sensitive_file" "db_config" {
+      + content              = (sensitive value)
+      + filename             = "./output/db.conf"
     }
 
-    provider "aws" {
-    region = var.aws_region
-
-    default_tags {
-        tags = {
-        Terraform = "yes"
-        Owner = var.owner
-        }
+  # random_password.db_password will be created
+  + resource "random_password" "db_password" {
+      + id               = (known after apply)
+      + length           = 16
+      + result           = (sensitive value)
+      + special          = true
+      + override_special = "!#$%"
     }
-    }
-    ```
+```
 
-    [01_rds.tf](./01_rds.tf)
-    ```hcl
-    resource "aws_db_instance" "myrds" {
-    allocated_storage    = 5
-    db_name              = "mydb"
-    engine               = "mysql"
-    engine_version       = "5.7"
-    instance_class       = "db.t2.micro"
-    username             = var.db_username
-    password             = var.db_password
-    parameter_group_name = "default.mysql5.7"
-    skip_final_snapshot  = true
-    }
-    ```
+### Outputs masqués
 
-    [02_variables.tf](./02_variables.tf)
-    ```hcl
-    variable "aws_region" {
-    description = "Région AWS dans laquelle les resources seront créées"
-    type        = string
-    default     = "us-east-1"
-    }
+L'output `db_password_generated` est déclaré `sensitive = true` :
 
-    variable "owner" {
-    description = "Nom de l'ingénieur qui crée les resources"
-    type        = string
-    default     = "Venkatesh"
-    }
+```bash
+$ terraform output
+db_password_generated = <sensitive>
+```
 
-    variable "db_username" {
-    description = "Nom d'utilisateur de la base de données"
-    type        = string
-    sensitive = true
-    }
+Pour afficher la valeur (uniquement en local, jamais dans les pipelines CI/CD) :
 
-    variable "db_password" {
-    description = "Mot de passe de la base de données"
-    type        = string
-    sensitive = true
-    }
-    ```
-    [03_secrets.tfvars](./03_secrets.tfvars)
-    ```hcl
-    # Ceci est uniquement à des fins d'apprentissage - ne stockez pas d'informations sensibles dans un fichier en clair ni ne publiez le code sur GitHub.
-    # Utilisez AWS Secret Manager pour stocker et récupérer vos secrets
+```bash
+terraform output -raw db_password_generated
+```
 
-    db_username = "admin"
-    db_password = "adminpassword"
-    ```
+### Fichier d'état (`terraform.tfstate`)
 
-- Dans l'exemple ci-dessus,
-    les variables `db_username` et `db_password` sont marquées *`sensitive = true`*
+Le state file **stocke les valeurs sensibles en texte clair**. Protégez l'accès à ce fichier et utilisez un backend distant sécurisé (ex : Terraform Cloud, S3 avec chiffrement) en production.
 
+---
 
+## `local_sensitive_file` vs `local_file`
 
-- Sortie de ***`terraform apply`***
+| Ressource              | Permissions fichier | Usage recommandé             |
+| ---------------------- | ------------------- | ---------------------------- |
+| `local_file`           | `0777` (lecture)    | Fichiers non sensibles       |
+| `local_sensitive_file` | `0700` (restreint)  | Fichiers contenant des secrets |
 
-    - Vous pouvez constater que `db_username` et `db_password` sont marqués avec la valeur ***`(sensitive value)`***
+`local_sensitive_file` applique automatiquement des permissions restreintes sur le fichier généré.
 
-    ![01-tf-apply-sen-var](./imgs/01-tf-apply-sen-var.png)
+---
 
-- ***`terraform state file`***
-    - Veuillez noter que **le state file terraform *`terraform.tfstate`* stockera les informations sensibles en texte clair**, soyez donc prudent quant à la façon dont vous souhaitez l'utiliser.
+## Commandes Terraform
 
-    ![02-tf-state-sen-var.png](./imgs/02-tf-state-sen-var.png)
+```bash
+terraform init
+terraform validate
+terraform fmt
 
+# Utiliser les valeurs par défaut (mot de passe généré automatiquement)
+terraform plan
+terraform apply     # confirmer avec yes
 
-    <details>
-    <summary> <i>terraform apply</i> </summary>
+# Passer un mot de passe personnalisé
+terraform apply -var="db_password=MonMotDePasse123!"
 
-    ```hcl
-    $ terraform apply -var-file 03_secrets.tfvars
+# Afficher les outputs (valeur masquée)
+terraform output
 
-    Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
-    + create
+# Afficher la valeur sensible (à utiliser avec précaution)
+terraform output -raw db_password_generated
 
-    Terraform will perform the following actions:
+terraform destroy   # confirmer avec yes
+```
 
-    # aws_db_instance.myrds will be created
-    + resource "aws_db_instance" "myrds" {
-        + address                               = (known after apply)
-        + allocated_storage                     = 5
-        + apply_immediately                     = false
-        + arn                                   = (known after apply)
-        + auto_minor_version_upgrade            = true
-        + availability_zone                     = (known after apply)
-        + backup_retention_period               = (known after apply)
-        + backup_target                         = (known after apply)
-        + backup_window                         = (known after apply)
-        + ca_cert_identifier                    = (known after apply)
-        + character_set_name                    = (known after apply)
-        + copy_tags_to_snapshot                 = false
-        + db_name                               = "mydb"
-        + db_subnet_group_name                  = (known after apply)
-        + delete_automated_backups              = true
-        + endpoint                              = (known after apply)
-        + engine                                = "mysql"
-        + engine_version                        = "5.7"
-        + engine_version_actual                 = (known after apply)
-        + hosted_zone_id                        = (known after apply)
-        + id                                    = (known after apply)
-        + identifier                            = (known after apply)
-        + identifier_prefix                     = (known after apply)
-        + instance_class                        = "db.t2.micro"
-        + iops                                  = (known after apply)
-        + kms_key_id                            = (known after apply)
-        + latest_restorable_time                = (known after apply)
-        + license_model                         = (known after apply)
-        + listener_endpoint                     = (known after apply)
-        + maintenance_window                    = (known after apply)
-        + master_user_secret                    = (known after apply)
-        + master_user_secret_kms_key_id         = (known after apply)
-        + monitoring_interval                   = 0
-        + monitoring_role_arn                   = (known after apply)
-        + multi_az                              = (known after apply)
-        + nchar_character_set_name              = (known after apply)
-        + network_type                          = (known after apply)
-        + option_group_name                     = (known after apply)
-        + parameter_group_name                  = "default.mysql5.7"
-        + password                              = (sensitive value)
-        + performance_insights_enabled          = false
-        + performance_insights_kms_key_id       = (known after apply)
-        + performance_insights_retention_period = (known after apply)
-        + port                                  = (known after apply)
-        + publicly_accessible                   = false
-        + replica_mode                          = (known after apply)
-        + replicas                              = (known after apply)
-        + resource_id                           = (known after apply)
-        + skip_final_snapshot                   = true
-        + snapshot_identifier                   = (known after apply)
-        + status                                = (known after apply)
-        + storage_throughput                    = (known after apply)
-        + storage_type                          = (known after apply)
-        + tags_all                              = {
-            + "Owner"     = "Venkatesh"
-            + "Terraform" = "yes"
-            }
-        + timezone                              = (known after apply)
-        + username                              = (sensitive value)
-        + vpc_security_group_ids                = (known after apply)
-        }
+---
 
-    Plan: 1 to add, 0 to change, 0 to destroy.
+## Bonnes pratiques
 
-    Do you want to perform these actions?
-    Terraform will perform the actions described above.
-    Only 'yes' will be accepted to approve.
+- Ne stockez **jamais** de secrets dans les fichiers `.tf` versionnés.
+- Utilisez `-var` ou des variables d'environnement `TF_VAR_` pour passer les secrets.
+- En production, intégrez un système de gestion des secrets (HashiCorp Vault, gestionnaire de secrets cloud).
+- Ajoutez `terraform.tfstate` et `*.tfvars` contenant des secrets à votre `.gitignore`.
 
-    Enter a value: yes
+---
 
-    aws_db_instance.myrds: Creating...
-    aws_db_instance.myrds: Still creating... [10s elapsed]
-    ...
-    aws_db_instance.myrds: Creation complete after 4m54s [id=db-T3HTPB3R3POAB7NKOMA5XYZBHA]
+## Références
 
-    Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
-    ```
-
-    </details>
-
-
-## Références :
-
-[Variables d'Entrée Sensibles Terraform](https://www.hashicorp.com/blog/terraform-sensitive-input-variables)
-
-[Protéger les variables d'entrée sensibles](https://developer.hashicorp.com/terraform/tutorials/configuration-language/sensitive-variables)
-
-
+- [Variables d'entrée sensibles Terraform](https://www.hashicorp.com/blog/terraform-sensitive-input-variables)
+- [Protéger les variables d'entrée sensibles](https://developer.hashicorp.com/terraform/tutorials/configuration-language/sensitive-variables)
+- [Ressource `local_sensitive_file`](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/sensitive_file)
+- [Ressource `random_password`](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password)

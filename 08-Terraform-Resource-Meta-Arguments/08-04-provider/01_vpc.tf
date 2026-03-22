@@ -1,23 +1,23 @@
- # Create VPC in different regions using different providers
+# Meta-argument PROVIDER
+# Chaque ressource cible explicitement un provider aliasé
+# Simule : créer des VPCs dans deux régions AWS différentes
 
-# Create VPC in North-Virginia Region
-resource "aws_vpc" "nv-vpc" {
-  # meta argument provider is used to specify which provider to be used
-  provider   = aws.us-east-nv
-  cidr_block = "10.1.0.0/16"
-
-  tags = {
-    Name = "North-Virginia-VPC"
-  }
+resource "local_file" "europe_config" {
+  provider = local.project-europe
+  filename = "${path.module}/output/europe/infra.conf"
+  content  = "REGION=eu-west-1\nENV=europe\nVPC_CIDR=10.1.0.0/16"
 }
 
-# Create VPC in Mumbai Region
-resource "aws_vpc" "mum-vpc" {
-  # meta argument provider is used to specify which provider to be used
-  provider   = aws.ap-south-mumbai
-  cidr_block = "10.2.0.0/16"
+resource "local_file" "asia_config" {
+  provider = local.project-asia
+  filename = "${path.module}/output/asia/infra.conf"
+  content  = "REGION=ap-south-1\nENV=asia\nVPC_CIDR=10.2.0.0/16"
+}
 
-  tags = {
-    Name = "Mumbai-VPC"
-  }
+output "europe_config_path" {
+  value = local_file.europe_config.filename
+}
+
+output "asia_config_path" {
+  value = local_file.asia_config.filename
 }

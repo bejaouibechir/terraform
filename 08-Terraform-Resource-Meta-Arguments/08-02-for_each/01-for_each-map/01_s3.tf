@@ -1,19 +1,24 @@
-# Create S3 Bucket per environment with for_each and maps
-# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket
+# Meta-argument FOR_EACH — map
+# Crée un fichier de configuration par environnement
+# Équivaut à créer des S3 buckets par environnement avec for_each + map
 
-resource "aws_s3_bucket" "mys3bucket" {
+resource "local_file" "bucket_config" {
   for_each = {
-    dev = "venkat-app-log"
-    uat = "venkat-app-log"
-    pre = "venkat-app-log"
-    prd = "venkat-app-log"
+    dev = "venkat-app-log-dev"
+    uat = "venkat-app-log-uat"
+    pre = "venkat-app-log-pre"
+    prd = "venkat-app-log-prd"
   }
-  bucket = "${each.key}-${each.value}"
 
-  tags = {
-    Name = "${each.key}-${each.value}"
-    Env  = each.key
-  }
+  filename = "${path.module}/output/${each.key}-bucket.conf"
+  content  = <<-EOT
+    BUCKET_NAME=${each.value}
+    ENVIRONMENT=${each.key}
+    REGION=us-east-1
+  EOT
 }
 
-
+output "bucket_configs" {
+  description = "Chemins des fichiers de configuration créés"
+  value       = { for k, v in local_file.bucket_config : k => v.filename }
+}

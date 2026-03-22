@@ -1,3 +1,5 @@
+> ⚙️ Ce lab utilise **LocalStack** — aucune credential AWS réelle requise.
+
 # Workspaces Terraform
 
 - Les workspaces Terraform vous permettent de **gérer différents ensembles de resources d'infrastructure** en utilisant la **même configuration Terraform** en isolant les fichiers state.
@@ -25,7 +27,7 @@ Les commandes suivantes vous aident à gérer et à basculer facilement entre di
 ```hcl
 # Exemple : nommer une resource selon le workspace actif
 resource "aws_vpc" "myvpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = lookup(var.vpc_cidr, terraform.workspace, "10.0.0.0/16")
   tags = {
     Name = "MyVPC-${terraform.workspace}"
   }
@@ -48,8 +50,25 @@ terraform {
   }
 }
 
+# ---------------------------------------------------------------------------
+# Provider AWS — LocalStack (simulation locale, aucune credential AWS réelle)
+# LocalStack doit être lancé : docker run -d -p 4566:4566 localstack/localstack
+# ---------------------------------------------------------------------------
 provider "aws" {
   region = var.aws_region
+
+  access_key                  = "test"
+  secret_key                  = "test"
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+
+  endpoints {
+    ec2 = "http://localhost:4566"
+    s3  = "http://localhost:4566"
+    iam = "http://localhost:4566"
+    sts = "http://localhost:4566"
+  }
 
   default_tags {
     tags = {
@@ -130,13 +149,27 @@ output "workspace_actif" {
 
 ## Exécution Pas à Pas
 
-### Étape 1 — Initialiser Terraform
+### Étape 1 — Démarrer LocalStack
+
+LocalStack doit être actif avant toute commande Terraform.
+
+```shell
+docker run -d -p 4566:4566 localstack/localstack
+```
+
+Vérifiez que LocalStack répond :
+
+```shell
+curl http://localhost:4566/_localstack/health
+```
+
+### Étape 2 — Initialiser Terraform
 
 ```shell
 terraform init
 ```
 
-### Étape 2 — Vérifier le workspace actif (default par défaut)
+### Étape 3 — Vérifier le workspace actif (default par défaut)
 
 ```shell
 terraform workspace show
@@ -146,7 +179,7 @@ terraform workspace show
 default
 ```
 
-### Étape 3 — Créer et basculer vers le workspace *dev*
+### Étape 4 — Créer et basculer vers le workspace *dev*
 
 ```shell
 terraform workspace new dev
@@ -166,7 +199,7 @@ for this configuration.
 
 </details>
 
-### Étape 4 — Appliquer la configuration dans le workspace *dev*
+### Étape 5 — Appliquer la configuration dans le workspace *dev*
 
 ```shell
 terraform apply -auto-approve
@@ -186,9 +219,9 @@ Terraform will perform the following actions:
 
   # aws_vpc.myvpc will be created
   + resource "aws_vpc" "myvpc" {
-      + cidr_block       = "10.1.0.0/16"
-      + id               = (known after apply)
-      + tags             = {
+      + cidr_block = "10.1.0.0/16"
+      + id         = (known after apply)
+      + tags       = {
           + "Environment" = "dev"
           + "Name"        = "MyVPC-dev"
           + "Owner"       = "Venkatesh"
@@ -199,20 +232,20 @@ Terraform will perform the following actions:
 Plan: 1 to add, 0 to change, 0 to destroy.
 
 aws_vpc.myvpc: Creating...
-aws_vpc.myvpc: Creation complete after 2s [id=vpc-0ab12cd34ef111111]
+aws_vpc.myvpc: Creation complete after 1s [id=vpc-0a1b2c3d4e5f00011]
 
 Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 
 Outputs:
 
 vpc_cidr        = "10.1.0.0/16"
-vpc_id          = "vpc-0ab12cd34ef111111"
+vpc_id          = "vpc-0a1b2c3d4e5f00011"
 workspace_actif = "dev"
 ```
 
 </details>
 
-### Étape 5 — Créer et basculer vers le workspace *staging*, puis appliquer
+### Étape 6 — Créer et basculer vers le workspace *staging*, puis appliquer
 
 ```shell
 terraform workspace new staging
@@ -229,20 +262,20 @@ Created and switched to workspace "staging"!
 $ terraform apply -auto-approve
 
 aws_vpc.myvpc: Creating...
-aws_vpc.myvpc: Creation complete after 2s [id=vpc-0cd34ef56ab222222]
+aws_vpc.myvpc: Creation complete after 1s [id=vpc-0a1b2c3d4e5f00022]
 
 Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 
 Outputs:
 
 vpc_cidr        = "10.2.0.0/16"
-vpc_id          = "vpc-0cd34ef56ab222222"
+vpc_id          = "vpc-0a1b2c3d4e5f00022"
 workspace_actif = "staging"
 ```
 
 </details>
 
-### Étape 6 — Créer et basculer vers le workspace *prod*, puis appliquer
+### Étape 7 — Créer et basculer vers le workspace *prod*, puis appliquer
 
 ```shell
 terraform workspace new prod
@@ -259,20 +292,20 @@ Created and switched to workspace "prod"!
 $ terraform apply -auto-approve
 
 aws_vpc.myvpc: Creating...
-aws_vpc.myvpc: Creation complete after 2s [id=vpc-0ef56ab78cd333333]
+aws_vpc.myvpc: Creation complete after 1s [id=vpc-0a1b2c3d4e5f00033]
 
 Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 
 Outputs:
 
 vpc_cidr        = "10.3.0.0/16"
-vpc_id          = "vpc-0ef56ab78cd333333"
+vpc_id          = "vpc-0a1b2c3d4e5f00033"
 workspace_actif = "prod"
 ```
 
 </details>
 
-### Étape 7 — Lister tous les workspaces
+### Étape 8 — Lister tous les workspaces
 
 ```shell
 terraform workspace list
@@ -287,7 +320,7 @@ terraform workspace list
 
 > Le symbole `*` indique le **workspace actuellement actif**.
 
-### Étape 8 — Basculer vers un workspace existant
+### Étape 9 — Basculer vers un workspace existant
 
 ```shell
 terraform workspace select dev
@@ -297,7 +330,7 @@ terraform workspace select dev
 Switched to workspace "dev".
 ```
 
-### Étape 9 — Observer l'isolation des fichiers state
+### Étape 10 — Observer l'isolation des fichiers state
 
 Après ces opérations, Terraform crée un répertoire `terraform.tfstate.d/` contenant un fichier state **isolé par workspace** :
 
@@ -315,9 +348,9 @@ terraform.tfstate.d/
 - Les modifications dans un workspace **n'affectent pas** les autres
 - Le workspace `default` utilise le fichier `terraform.tfstate` à la racine du projet
 
-### Étape 10 — Nettoyage (*`terraform destroy`*)
+### Étape 11 — Nettoyage (*`terraform destroy`*)
 
-> **Uniquement pour les tests** — ne pas utiliser sur une infrastructure réelle
+> **Uniquement pour les tests** — les resources sont locales à LocalStack et disparaissent à l'arrêt du conteneur
 
 ```shell
 # Détruire dans chaque workspace
@@ -342,3 +375,5 @@ terraform workspace delete prod
 https://developer.hashicorp.com/terraform/language/state/workspaces
 
 https://developer.hashicorp.com/terraform/cli/workspaces
+
+https://docs.localstack.cloud/

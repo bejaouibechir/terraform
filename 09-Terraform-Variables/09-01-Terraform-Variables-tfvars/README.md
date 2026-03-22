@@ -1,148 +1,165 @@
-# Variables Terraform
+# Variables Terraform — Fichier `terraform.tfvars`
+
+> ✅ Ce lab utilise uniquement des providers légers — aucune credential requise.
 
 ## Surcharge des valeurs `default` avec le fichier `terraform.tfvars`
 
-## Utilisation de `terraform.tfvars` pour Surcharger les Valeurs des Variables
+Dans Terraform, vous pouvez personnaliser vos configurations sans modifier le code source en utilisant un fichier **`terraform.tfvars`**.
 
-Dans Terraform, vous pouvez personnaliser vos configurations Terraform sans modifier le code en utilisant un fichier **`terraform.tfvars`**.
+- Le fichier `terraform.tfvars` permet de définir des valeurs personnalisées pour vos variables Terraform.
+- Lorsque vous exécutez des commandes Terraform, il **lit automatiquement** `terraform.tfvars` et charge les variables présentes dans ce fichier en remplaçant les valeurs par défaut définies dans `02_variables.tf`.
+- Le nom du fichier doit être exactement **`terraform.tfvars`**.
+- Vous pouvez également utiliser **`terraform.tfvars.json`** — les fichiers dont les noms se terminent par `.json` sont analysés comme des objets JSON, les propriétés de l'objet racine correspondant aux noms des variables.
 
-- Le fichier `terraform.tfvars` vous permet de définir des valeurs personnalisées pour vos variables Terraform.
-- Lorsque vous exécutez des commandes Terraform, il **lit automatiquement** `terraform.tfvars` et **chargera automatiquement** les variables présentes dans ce fichier en remplaçant les valeurs par défaut dans `variables.tf`
-- Le nom du fichier doit être exactement ***`terraform.tfvars`***
-- Vous pouvez également utiliser ***`terraform.tfvars.json`*** — les fichiers dont les noms se terminent par *.json* sont analysés comme des objets JSON, les propriétés de l'objet racine correspondant aux noms des variables
+**Syntaxe :**
 
-- **Syntaxe**
+```hcl
+nom_variable = "nouvelle_valeur"
+```
 
-    ```hcl
-    nom_variable = "nouvelle_valeur"
-    ```
+---
 
-- **Exemple** :
+## Fichiers du lab
 
-    [00_provider.tf](./00_provider.tf)
-    ```hcl
-    terraform {
-    required_providers {
-        aws = {
-        source  = "hashicorp/aws"
-        version = "~> 5.0"
-        }
+**`00_provider.tf`**
+
+```hcl
+terraform {
+  required_providers {
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
+provider "local" {}
+provider "random" {}
+```
+
+**`01_ec2.tf`**
+
+```hcl
+resource "random_pet" "server" {
+  length = 2
+  prefix = var.environment
+}
+
+resource "local_file" "config" {
+  filename = "${path.module}/output/server.conf"
+  content  = "SERVER=${random_pet.server.id}\nENV=${var.environment}\nOWNER=${var.owner}"
+}
+
+output "server_name" { value = random_pet.server.id }
+```
+
+`random_pet` génère un nom de serveur aléatoire préfixé par la valeur de `var.environment`. `local_file` écrit un fichier de configuration contenant ce nom, l'environnement et le propriétaire.
+
+**`02_variables.tf`**
+
+```hcl
+variable "environment" {
+  description = "Nom de l'environnement"
+  type        = string
+  default     = "dev"
+}
+
+variable "owner" {
+  description = "Nom de l'ingénieur responsable"
+  type        = string
+  default     = "Venkatesh"
+}
+
+variable "instance_count" {
+  description = "Nombre d'instances"
+  type        = number
+  default     = 1
+}
+```
+
+Trois variables sont définies, chacune avec une valeur `default` :
+
+1. `environment` — environnement cible (par défaut : `"dev"`)
+2. `owner` — propriétaire des ressources (par défaut : `"Venkatesh"`)
+3. `instance_count` — nombre de fichiers à générer (par défaut : `1`)
+
+---
+
+## Le fichier `terraform.tfvars`
+
+Le fichier `terraform.tfvars` surcharge les valeurs par défaut déclarées dans `02_variables.tf` :
+
+**`terraform.tfvars`**
+
+```hcl
+environment    = "staging"
+owner          = "Alice"
+instance_count = 2
+```
+
+Ici, les trois valeurs par défaut sont remplacées :
+
+- `environment` passe de `"dev"` à `"staging"`
+- `owner` passe de `"Venkatesh"` à `"Alice"`
+- `instance_count` passe de `1` à `2`
+
+---
+
+## Priorité de chargement
+
+| Priorité | Source                  | Exemple                         |
+| -------- | ----------------------- | ------------------------------- |
+| **5** *(haute)* | `-var` ligne de commande | `terraform plan -var="owner=Bob"` |
+| **4**    | `*.auto.tfvars`         | `prod.auto.tfvars`              |
+| **3**    | `terraform.tfvars.json` | `{ "owner": "Bob" }`            |
+| **2**    | `terraform.tfvars`      | `owner = "Bob"`                 |
+| **1** *(faible)* | `TF_VAR_` env vars | `export TF_VAR_owner=Bob`      |
+
+> `terraform.tfvars` est automatiquement lu. Pour un autre nom de fichier, utilisez `-var-file` (voir le module 09-02).
+
+---
+
+## Commandes Terraform
+
+```bash
+terraform init
+terraform validate
+terraform fmt
+terraform plan
+terraform apply     # confirmer avec yes
+terraform destroy   # confirmer avec yes
+```
+
+### Sortie de `terraform plan` (avec `terraform.tfvars`)
+
+```
+Terraform will perform the following actions:
+
+  # random_pet.server will be created
+  + resource "random_pet" "server" {
+      + id     = (known after apply)
+      + length = 2
+      + prefix = "staging"
     }
 
-    provider "aws" {
-    #region = "us-east-1"
-    region = var.aws_region
-
-    default_tags {
-        tags = {
-        Terraform = "yes"
-        #Owner = "Venkatesh"
-        Owner = var.owner
-        }
-    }
-    }
-    ```
-
-    [01_ec2.tf](./01_ec2.tf)
-    ```hcl
-    resource "aws_instance" "myec2" {
-    # arguments terraform sans variables
-    # ami = "ami-0df435f331839b2d6"
-    # instance_type = "t2.micro"
-    # count = 1
-
-    # utilisation de variables pour les arguments
-    ami           = var.ec2_ami
-    instance_type = var.ec2_instance_type
-    count         = var.instance_count
-
-    tags = {
-        Name = "Linux2023"
-    }
-    }
-    ```
-
-    [02_variables.tf](./02_variables.tf)
-
-    ```hcl
-    variable "aws_region" {
-    description = "Région AWS dans laquelle les resources seront créées"
-    type        = string
-    default     = "us-east-1"
+  # local_file.config will be created
+  + resource "local_file" "config" {
+      + content  = (known after apply)
+      + filename = "./output/server.conf"
     }
 
-    variable "owner" {
-    description = "Nom de l'ingénieur qui crée les resources"
-    type        = string
-    default     = "Venkatesh"
-    }
+Plan: 2 to add, 0 to change, 0 to destroy.
+```
 
-    variable "ec2_ami" {
-    description = "AMI EC2 AWS Amazon Linux 2023"
-    type        = string
-    default     = "ami-0df435f331839b2d6" # Amazon Linux 2023
-    }
+> Terraform utilise `"staging"` (valeur du `terraform.tfvars`) et non `"dev"` (valeur par défaut).
 
-    variable "ec2_instance_type" {
-    description = "Type d'instance EC2"
-    type        = string
-    default     = "t2.micro"
-    }
+---
 
-    variable "instance_count" {
-    description = "Nombre d'instances EC2"
-    type        = number
-    default     = 1
-    }
-    ```
+## Références
 
-- Dans l'exemple ci-dessus, nous avons défini cinq variables :
-    1. `aws_region` : région AWS par défaut à utiliser
-    2. `owner` : Nom de l'ingénieur qui crée les resources
-    3. `ec2_ami` : AMI EC2 AWS
-    4. `ec2_instance_type` : Type d'instance EC2 AWS
-    5. `instance_count` : Nombre d'instances EC2 à créer
-
-- Maintenant, créons le fichier `terraform.tfvars` et voyons comment il surcharge les variables par défaut.
-- Surchargeons les variables `ec2_instance_type` et `owner` dans notre configuration. Créez un fichier `terraform.tfvars` comme ceci :
-
-    [terraform.tfvars](./terraform.tfvars)
-    ```hcl
-    ec2_instance_type = "t3.small"
-    owner             = "Amar"
-    ```
-
-- Sortie de ***`terraform plan`***
-
-    - Vous pouvez constater le changement d'`ec2_instance_type` à *t3.small* et d'`owner` à *Amar*
-
-    ```hcl
-    $ terraform plan
-
-    Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
-    + create
-
-    Terraform will perform the following actions:
-
-    # aws_instance.myec2[0] will be created
-    + resource "aws_instance" "myec2" {
-        + ami                                  = "ami-0df435f331839b2d6"
-        ...
-        + instance_type                        = "t3.small"
-        ...
-        + tags_all                             = {
-            + "Name"      = "Linux2023"
-            + "Owner"     = "Amar"
-            + "Terraform" = "yes"
-            }
-        ...
-        }
-
-    Plan: 1 to add, 0 to change, 0 to destroy.
-    ```
-
-## Références :
-
-[Fichiers de Définition de Variables (.tfvars)](https://developer.hashicorp.com/terraform/language/values/variables#variable-definitions-tfvars-files)
-
+- [Fichiers de définition de variables (.tfvars)](https://developer.hashicorp.com/terraform/language/values/variables#variable-definitions-tfvars-files)
+- [Variables d'entrée — Terraform docs](https://developer.hashicorp.com/terraform/language/values/variables)

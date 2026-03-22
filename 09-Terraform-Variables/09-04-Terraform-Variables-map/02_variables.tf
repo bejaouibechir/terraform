@@ -1,39 +1,17 @@
-variable "aws_region" {
-  description = "AWS Region In Which Resources will be Created"
-  type        = string
-  default     = "us-east-1"
+variable "environment" {
+  type    = string
+  default = "dev"
 }
 
-variable "owner" {
-  description = "Name of the Engineer who is creating Resources"
-  type        = string
-  default     = "Venkatesh"
-}
-
-variable "ec2_ami" {
-  description = "AWS EC2 AMI Amazon Linux 2023"
-  type        = string
-  default     = "ami-0df435f331839b2d6" # Amazon Linux 2023
-}
-
-variable "ec2_instance_type" {
-  description = "EC2 Instance Type"
-  type        = map(string)
+variable "servers" {
+  description = "Map des serveurs avec leurs configurations"
+  type = map(object({
+    port = number
+    env  = string
+  }))
   default = {
-    tmicro   = "t2.micro"
-    tsmall   = "t2.small"
-    tlarge   = "t2.large"
+    web = { port = 80,   env = "prod" }
+    api = { port = 8080, env = "dev"  }
+    db  = { port = 5432, env = "prod" }
   }
-}
-
-variable "instance_count" {
-  description = "Number of EC2"
-  type        = number
-  default     = 1
-}
-
-variable "env" {
-  description = "Environment Type"
-  type        = string
-  default     = "dev"
 }
