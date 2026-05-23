@@ -1,181 +1,104 @@
-# Guide Complet Terraform — De Débutant à Certifié
+![CI](https://github.com/bejaouibechir/terraform/actions/workflows/terraform-ci.yml/badge.svg)
 
-<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGNZPnTV1nyxncrXRkCWb7hvAxwbwf7pjEnA&s" title="" alt="" data-align="center">
+# Guide Complet Terraform
 
-## À Propos
+Ce depot est un support de formation progressif pour apprendre Terraform avec AWS, LocalStack et plusieurs providers avancés. Chaque module combine de la theorie, des exemples HCL, et quand c'est pertinent des scripts de lab pour Linux/Mac et Windows.
 
-Ce dépôt est un support de formation **complet et progressif** pour apprendre Terraform (Infrastructure as Code) avec AWS. Chaque module combine :
+## Prerequis
 
-- **Théorie** — concepts expliqués en français avec exemples HCL
-- **Démonstration** — fichiers `.tf` prêts à l'emploi
-- **Lab pratique** — scripts d'orchestration `lab-script.sh` (Linux/Mac) et `lab-script.ps1` (Windows)
+| Outil | Version | Usage |
+| ----- | ------- | ----- |
+| Terraform | >= 1.5 | Executer, formater, valider et planifier l'infrastructure |
+| Git | >= 2.0 | Cloner le depot et travailler avec GitHub |
+| Docker | >= 20.0 | Lancer LocalStack et les labs Docker |
+| LocalStack | >= 4.0 | Simuler AWS en local pour les labs |
+| AWS CLI | >= 2.0 | Optionnel pour interagir avec AWS |
+| TFLint | Derniere stable | Linter Terraform et provider AWS |
+| Checkov | Derniere stable | Scanner la securite IaC |
+| kubectl | >= 1.28 | Labs Kubernetes |
+| minikube | >= 1.30 | Labs Kubernetes locaux |
+| Ansible | >= 2.15 | Lab de provisioning avance |
 
-![](C:\Users\DELL\Desktop\terraform-beginners-guide\imgs\iac-terraform.jpg)
+> Les labs AWS utilisent majoritairement LocalStack. Aucun credential reel ne doit etre stocke dans le code.
 
-## Prérequis
-
-### Outils de base
-
-| Outil                                                          | Version | Statut               | Installation                                                                                                       |
-| -------------------------------------------------------------- | ------- | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [Terraform](https://developer.hashicorp.com/terraform/install) | ≥ 1.0   | ✅ Installé (v1.14.7) | `brew install terraform` / [installer](https://developer.hashicorp.com/terraform/install)                          |
-| [Git](https://git-scm.com/)                                    | ≥ 2.0   | ✅ Installé           | `brew install git` / `apt install git`                                                                             |
-| [Docker](https://docs.docker.com/get-docker/)                  | ≥ 20.0  | ✅ Installé (v28.2.2) | `apt install docker.io` / [Docker Desktop](https://docs.docker.com/get-docker/)                                    |
-| [LocalStack](https://localstack.cloud/)                        | ≥ 4.0   | ✅ Installé (v4.14.0) | `pip install localstack`                                                                                           |
-| [AWS CLI](https://aws.amazon.com/cli/)                         | ≥ 2.0   | ⚙️ Optionnel         | `brew install awscli` / [installer](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) |
-| Compte AWS réel                                                | —       | ⚙️ Optionnel         | [Créer un compte](https://aws.amazon.com/free/)                                                                    |
-
-### Outils pour études de cas avancées (module 22)
-
-| Outil                                              | Version | Statut       | Installation                                                                    |
-| -------------------------------------------------- | ------- | ------------ | ------------------------------------------------------------------------------- |
-| [kubectl](https://kubernetes.io/docs/tasks/tools/) | ≥ 1.28  | ⚙️ Optionnel | `brew install kubectl` / [installer](https://kubernetes.io/docs/tasks/tools/)   |
-| [minikube](https://minikube.sigs.k8s.io/)          | ≥ 1.30  | ⚙️ Optionnel | `brew install minikube` / [installer](https://minikube.sigs.k8s.io/docs/start/) |
-| [Ansible](https://docs.ansible.com/)               | ≥ 2.15  | ⚙️ Optionnel | `pip install ansible` / `apt install ansible`                                   |
-
-> **Note :** Les labs 06 à 20 utilisent **LocalStack** pour simuler AWS localement — aucun compte AWS ni credentials réels ne sont nécessaires pour suivre ce support.
-
-### Démarrer LocalStack
+## Demarrer LocalStack
 
 ```bash
-# Installer LocalStack
 pip install localstack awscli-local
-
-# Démarrer avec les services nécessaires (EC2, S3, IAM, STS)
 export SERVICES=ec2,s3,iam,sts
 localstack start -d
-
-# Vérifier que LocalStack est prêt
-curl http://localhost:4566/_localstack/health | jq .services
+curl http://localhost:4566/_localstack/health
 ```
 
-### Configuration du provider Terraform pour LocalStack
+## Modules
 
-```hcl
-provider "aws" {
-  region                      = "us-east-1"
-  access_key                  = "test"
-  secret_key                  = "test"
-  skip_credentials_validation = true
-  skip_requesting_account_id  = true
-  skip_metadata_api_check     = true
+| Module | Titre | Description |
+| ------ | ----- | ----------- |
+| [00](./00-Terraform-Basics/README.md) | Terraform Basics | Introduction a l'IaC, au workflow Terraform et aux providers. |
+| [01](./01-Terraform-Installation/README.md) | Terraform Installation | Installation de Terraform sur Windows, macOS et Linux. |
+| [02](./02-Terraform-Architecture/README.md) | Terraform Architecture | Vue interne de Terraform Core, providers, state et graph engine. |
+| [03](./03-Terraform-Terminologies/README.md) | Terraform Terminologies | Glossaire des concepts cles Terraform. |
+| [04](./04-Terraform-Top-Level-Blocks/README.md) | Top-Level Blocks | Les blocs HCL principaux : provider, resource, variable, output, data et module. |
+| [05](./05-Terraform-Commands/README.md) | Terraform Commands | Commandes CLI essentielles : init, fmt, validate, plan, apply, destroy et state. |
+| [06](./06-Terraform-VPC-Demo/README.md) | VPC Demo | Premier lab AWS/LocalStack autour d'un VPC. |
+| [07](./07-Terraform-Resources/README.md) | Terraform Resources | Syntaxe des resources et cycle de vie Terraform. |
+| [08](./08-Terraform-Resource-Meta-Arguments/README.md) | Meta-Arguments | count, for_each, depends_on, provider et lifecycle. |
+| [09](./09-Terraform-Variables/README.md) | Terraform Variables | Types de variables, tfvars, validation et valeurs sensibles. |
+| [10](./10-Terraform-Outputs/README.md) | Terraform Outputs | Outputs, valeurs sensibles et partage de donnees. |
+| [11](./11-Terraform-Data-Sources/README.md) | Data Sources | Lire des informations existantes avec les data sources. |
+| [12](./12-Terraform-State/README.md) | Terraform State | State local, remote state, backend S3 et verrouillage. |
+| [13](./13-Terraform-Show/README.md) | Terraform Show | Inspecter le state et les plans Terraform. |
+| [14](./14-Terraform-Refresh/README.md) | Terraform Refresh | Synchroniser le state et detecter le drift. |
+| [15](./15-Terraform-State-Commands/README.md) | State Commands | Manipuler le state avec list, show, mv, rm, pull et push. |
+| [16](./16-Terraform-Workspaces/README.md) | Workspaces | Gerer plusieurs environnements avec terraform.workspace. |
+| [17](./17-Terraform-Modules/README.md) | Terraform Modules | Composer des modules locaux VPC, EC2 et S3. |
+| [18](./18-Terraform-Import/README.md) | Terraform Import | Importer une infrastructure existante dans le state. |
+| [19](./19-Terraform-Debug/README.md) | Debug & Logs | Utiliser TF_LOG et TF_LOG_PATH pour diagnostiquer Terraform. |
+| [20](./20-Terraform-provisioners/README.md) | Provisioners | local-exec, file, remote-exec et nettoyage. |
+| [21](./21-Terraform-Exam-Cheat-Sheet/README.md) | Exam Cheat Sheet | Aide-memoire pour la certification Terraform Associate. |
+| [22](./22-Terraform-Example-Codes/README.md) | Example Codes | Cas pratiques avec local, LocalStack, Docker, Kubernetes et Ansible. |
+| [23](./23-Terraform-Tooling/README.md) | Terraform Tooling | Qualite et securite avec fmt, validate, tflint et checkov. |
 
-  endpoints {
-    ec2 = "http://localhost:4566"
-    s3  = "http://localhost:4566"
-    iam = "http://localhost:4566"
-    sts = "http://localhost:4566"
-  }
-}
-```
+## CI/CD
 
----
+Le workflow GitHub Actions est defini dans [`.github/workflows/terraform-ci.yml`](./.github/workflows/terraform-ci.yml) et se declenche sur les pull requests vers `main`.
 
-## Parcours d'Apprentissage
+Le pipeline contient cinq jobs :
 
-![](C:\Users\DELL\Desktop\terraform-beginners-guide\imgs\learning-path.jpg)
+| Job | Role |
+| --- | ---- |
+| `fmt-check` | Execute `terraform fmt -check -recursive`. |
+| `validate` | Execute `terraform init -backend=false` puis `terraform validate` dans les dossiers Terraform. |
+| `tflint` | Initialise TFLint puis lance le lint Terraform. |
+| `checkov` | Scanne le depot avec `checkov -d . --framework terraform`. |
+| `plan` | Execute `terraform plan` apres succes des jobs precedents. |
 
-## Contenu des Modules
+Le job `plan` utilise les secrets GitHub `AWS_ACCESS_KEY_ID` et `AWS_SECRET_ACCESS_KEY` comme variables d'environnement. Ces credentials ne doivent jamais etre commits.
 
-### Fondamentaux
+## Tooling
 
-| Module                                          | Titre                         | Description                                                                                                           | Lab |
-| ----------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------- | --- |
-| [00](./00-Terraform-Basics/README.md)           | **Terraform — Guide Visuel**  | Qu'est-ce que Terraform ? IaC, providers, workflow init/plan/apply/destroy. Vue d'ensemble illustrée.                 | —   |
-| [01](./01-Terraform-Installation/README.md)     | **Installation de Terraform** | Installation sur Windows, Mac et Linux. Configuration du PATH, vérification de version.                               | —   |
-| [03](./03-Terraform-Terminologies/README.md)    | **Terminologies Terraform**   | Glossaire des termes clés : provider, resource, state, module, workspace, backend, data source...                     | —   |
-| [04](./04-Terraform-Top-Level-Blocks/README.md) | **Blocs de Niveau Supérieur** | Les 8 blocs HCL fondamentaux : `terraform`, `provider`, `resource`, `variable`, `output`, `locals`, `data`, `module`. | ✅   |
-| [05](./05-Terraform-Commands/README.md)         | **Commandes Terraform**       | Référence complète des commandes CLI : `init`, `validate`, `fmt`, `plan`, `apply`, `destroy`, `show`, `state`...      | ✅   |
-
----
-
-### Infrastructure AWS
-
-| Module                                   | Titre                   | Description                                                                                          | Lab |
-| ---------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- | --- |
-| [06](./06-Terraform-VPC-Demo/README.md)  | **Démonstration VPC**   | Premier lab AWS complet : création d'un VPC, subnet, internet gateway et route table avec Terraform. | ✅   |
-| [07](./07-Terraform-Resources/README.md) | **Resources Terraform** | Syntaxe des ressources, dépendances implicites/explicites (`depends_on`), cycle de vie complet.      | ✅   |
-
----
-
-### Variables et Outputs
-
-| Module                                                 | Titre                   | Description                                                                                                              | Lab |
-| ------------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ | --- |
-| [08](./08-Terraform-Resource-Meta-Arguments/README.md) | **Meta-Arguments**      | `count`, `for_each`, `depends_on`, `lifecycle` (`create_before_destroy`, `prevent_destroy`, `ignore_changes`).           | ✅   |
-| [09](./09-Terraform-Variables/README.md)               | **Variables Terraform** | Types de variables (`string`, `number`, `bool`, `list`, `map`, `object`), `terraform.tfvars`, variables d'environnement. | ✅   |
-| [10](./10-Terraform-Outputs/README.md)                 | **Outputs Terraform**   | Déclaration d'outputs, outputs sensibles (`sensitive`), partage de valeurs entre modules.                                | ✅   |
-| [11](./11-Terraform-Data-Sources/README.md)            | **Data Sources**        | Interroger l'infrastructure existante : `aws_ami`, `aws_vpc`, `aws_availability_zones`. Différence resource vs data.     | ✅   |
-
----
-
-### State Management
-
-| Module                                        | Titre                 | Description                                                                                                      | Lab |
-| --------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------- | --- |
-| [12](./12-Terraform-State/README.md)          | **Terraform State**   | State local vs distant (S3 + DynamoDB). Configuration du backend, verrouillage de state, `terraform state pull`. | ✅   |
-| [13](./13-Terraform-Show/README.md)           | **Terraform Show**    | Inspecter le state et les plans avec `terraform show`. Générer et analyser un fichier de plan binaire.           | ✅   |
-| [14](./14-Terraform-Refresh/README.md)        | **Terraform Refresh** | Synchroniser le state avec l'infrastructure réelle. Détecter les changements manuels hors Terraform.             | ✅   |
-| [15](./15-Terraform-State-Commands/README.md) | **Commandes State**   | `terraform state list`, `show`, `mv`, `rm`, `pull`, `push`. Gestion avancée du fichier de state.                 | ✅   |
-
----
-
-### Fonctionnalités Avancées
-
-| Module                                      | Titre                 | Description                                                                                                      | Lab |
-| ------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------- | --- |
-| [16](./16-Terraform-Workspaces/README.md)   | **Workspaces**        | Gérer plusieurs environnements (dev/staging/prod) avec un seul code. `terraform.workspace` et `lookup()`.        | ✅   |
-| [17](./17-Terraform-Modules/README.md)      | **Modules Terraform** | Créer et consommer des modules réutilisables. Structure `modules/vpc/`, appels avec `source`, inputs et outputs. | ✅   |
-| [18](./18-Terraform-Import/README.md)       | **Terraform Import**  | Importer des ressources AWS existantes dans le state Terraform. Workflow en 6 étapes.                            | ✅   |
-| [19](./19-Terraform-Debug/README.md)        | **Debug & Logs**      | Niveaux de log `TF_LOG` (TRACE, DEBUG, INFO, WARN, ERROR). Analyse des logs, `TF_LOG_PATH`.                      | ✅   |
-| [20](./20-Terraform-provisioners/README.md) | **Provisioners**      | `local-exec`, `file`, `remote-exec`. Provisioners de destruction (`when = destroy`), gestion des erreurs.        | ✅   |
-
----
-
-### Certification & Cas Pratiques
-
-| Module                                          | Titre                          | Description                                                                                                  | Lab |
-| ----------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------ | --- |
-| [21](./21-Terraform-Exam-Cheat-Sheet/README.md) | **Aide-Mémoire Certification** | Référence complète pour l'examen HashiCorp Terraform Associate : commandes, concepts, workspaces, modules... | —   |
-| [22](./22-Terraform-Example-Codes/README.md)    | **Études de Cas Avancés**      | 5 études de cas avec providers non-AWS : `local`, LocalStack, Docker, Kubernetes, Ansible.                   | ✅   |
-
----
-
-## Études de Cas — Providers Avancés
-
-<div align="center">
-
-|     | Provider                     | Technologie                   | Prérequis       |
-| --- | ---------------------------- | ----------------------------- | --------------- |
-| 🗂️ | `hashicorp/local`            | Génération de fichiers locaux | Terraform seul  |
-| 🖥️ | `hashicorp/aws` + LocalStack | Simulation AWS en local       | Docker          |
-| 🐳  | `kreuzwerker/docker`         | Conteneurs Docker             | Docker Desktop  |
-| ☸️  | `hashicorp/kubernetes`       | Déploiements Kubernetes       | minikube / kind |
-| 🔧  | `hashicorp/aws` + Ansible    | Provisioning combiné          | AWS + Ansible   |
-
-</div>
-
----
-
-## Structure du Dépôt
-
-![](C:\Users\DELL\Desktop\terraform-beginners-guide\imgs\guide-arborescence.jpg)
-
----
-
-## Comment Utiliser ce Support
-
-### Démarrage rapide
+Installez ces outils avant de lancer le module 23 ou le pipeline localement :
 
 ```bash
-# 1. Cloner le dépôt
-git clone https://github.com/votre-repo/terraform-beginners-guide.git
-cd terraform-beginners-guide
+terraform version
+tflint --version
+checkov --version
+```
 
-# 2. Commencer par les bases
-cd 00-Terraform-Basics && cat README.md
+Commandes utiles :
 
-# 3. Premier lab pratique
+```bash
+terraform fmt -recursive
+terraform validate
+tflint --init && tflint
+checkov -d . --framework terraform
+```
+
+## Utilisation Rapide
+
+```bash
+git clone https://github.com/bejaouibechir/terraform.git
+cd terraform
 cd 06-Terraform-VPC-Demo
 terraform init
 terraform plan
@@ -183,31 +106,25 @@ terraform apply -auto-approve
 terraform destroy -auto-approve
 ```
 
-### Avec les scripts d'orchestration
-
-Chaque module avec un lab dispose d'un script tout-en-un :
+Chaque module avec lab fournit :
 
 ```bash
-# Linux / Mac
 chmod +x lab-script.sh
 ./lab-script.sh
+```
 
-# Windows PowerShell
+Sous PowerShell :
+
+```powershell
 .\lab-script.ps1
 ```
 
-### Conseil d'apprentissage
-
-> Suivez les modules dans l'ordre numérique. Chaque module s'appuie sur les concepts du précédent. Exécutez systématiquement les labs avant de passer au suivant.
-
----
-
 ## Ressources Officielles
 
-| Ressource               | Lien                                                                     |
-| ----------------------- | ------------------------------------------------------------------------ |
-| Documentation Terraform | https://developer.hashicorp.com/terraform/docs                           |
-| Terraform Registry      | https://registry.terraform.io                                            |
+| Ressource | Lien |
+| --------- | ---- |
+| Documentation Terraform | https://developer.hashicorp.com/terraform/docs |
+| Terraform Registry | https://registry.terraform.io |
 | Certification Associate | https://developer.hashicorp.com/certifications/infrastructure-automation |
-| AWS Provider Docs       | https://registry.terraform.io/providers/hashicorp/aws/latest/docs        |
-| Terraform Tutorials     | https://developer.hashicorp.com/terraform/tutorials                      |
+| AWS Provider Docs | https://registry.terraform.io/providers/hashicorp/aws/latest/docs |
+| Terraform Tutorials | https://developer.hashicorp.com/terraform/tutorials |

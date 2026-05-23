@@ -2,26 +2,26 @@
 # Lab 17 - Terraform Modules
 # ============================================================
 
-# Initialise et télécharge les modules déclarés
+# Initialize and download declared modules
 terraform init
 
-# Formate aussi les fichiers dans le répertoire modules/
+# Format files in the modules directory too
 terraform fmt -recursive
 
-# Vérifie la syntaxe des fichiers .tf
+# Validate Terraform syntax
 terraform validate
 
-# Dans le plan, observez les ressources préfixées module.vpc_dev.* et module.vpc_prod.*
+# In the plan, observe resources prefixed with module.vpc_dev.*, module.ec2_dev.*, and module.s3_dev.*
 terraform plan
 
-# Crée les ressources pour les deux modules
+# Create resources for the composed modules
 terraform apply -auto-approve
 
-# Affiche les outputs des deux modules (dev et prod)
+# Show module outputs
 terraform output
 
-# Les ressources sont préfixées par module.<nom>.* dans le state
+# Resources are prefixed with module.<name>.* in state
 terraform state list
 
-# Détruit toutes les ressources (nettoyage)
+# Destroy all resources for cleanup
 terraform destroy -auto-approve

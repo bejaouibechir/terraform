@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" role="img" aria-labelledby="title desc">
+  <title id="title">Terraform architecture placeholder</title>
+  <desc id="desc">A placeholder diagram showing Terraform Core, providers, state, and graph engine.</desc>
+  <rect width="960" height="520" fill="#f8fafc"/>
+  <rect x="80" y="80" width="240" height="120" rx="8" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+  <text x="200" y="132" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Terraform Core</text>
+  <text x="200" y="166" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#475569">CLI, plan, apply</text>
+  <rect x="360" y="80" width="240" height="120" rx="8" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+  <text x="480" y="132" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Graph Engine</text>
+  <text x="480" y="166" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#475569">DAG ordering</text>
+  <rect x="640" y="80" width="240" height="120" rx="8" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+  <text x="760" y="132" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Providers</text>
+  <text x="760" y="166" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#475569">AWS, Docker, Kubernetes</text>
+  <rect x="220" y="300" width="240" height="120" rx="8" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+  <text x="340" y="352" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">State</text>
+  <text x="340" y="386" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#475569">Resource mapping</text>
+  <rect x="500" y="300" width="240" height="120" rx="8" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+  <text x="620" y="352" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Cloud APIs</text>
+  <text x="620" y="386" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#475569">Infrastructure changes</text>
+  <path d="M320 140 H360" stroke="#2563eb" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M600 140 H640" stroke="#2563eb" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M760 200 C760 260 700 300 620 300" stroke="#2563eb" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M200 200 C200 260 260 300 340 300" stroke="#2563eb" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#2563eb"/>
+    </marker>
+  </defs>
+</svg>
+

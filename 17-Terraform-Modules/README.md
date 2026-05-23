@@ -2,6 +2,8 @@
 
 # Modules Terraform
 
+> This module now composes three local modules: `vpc`, `ec2`, and `s3`. The VPC module creates the network, the EC2 module consumes the VPC subnet output, and the S3 module creates a versioned bucket for the same environment.
+
 ## Modules Terraform
 
 - Les modules Terraform sont des **unités de configuration d'infrastructure autonomes et réutilisables**.
@@ -188,7 +190,7 @@ variable "owner" {
 [02_main.tf](./02_main.tf)
 
 ```hcl
-# Appel du module VPC pour l'environnement dev
+# VPC module for the dev environment
 module "vpc_dev" {
   source = "./modules/vpc"
 
@@ -198,14 +200,30 @@ module "vpc_dev" {
   availability_zone = "us-east-1a"
 }
 
-# Appel du module VPC pour l'environnement prod
-module "vpc_prod" {
-  source = "./modules/vpc"
+# EC2 module composed with the dev VPC subnet
+module "ec2_dev" {
+  source = "./modules/ec2"
 
-  vpc_name          = "MyVPC-Prod"
-  vpc_cidr          = "10.1.0.0/16"
-  subnet_cidr       = "10.1.1.0/24"
-  availability_zone = "us-east-1b"
+  ami_id        = "ami-1234567890abcdef0"
+  instance_type = "t2.micro"
+  subnet_id     = module.vpc_dev.subnet_id
+
+  tags = {
+    Name        = "MyEC2-Dev"
+    Environment = "dev"
+  }
+}
+
+# S3 module composed with the same environment
+module "s3_dev" {
+  source = "./modules/s3"
+
+  bucket_name        = "terraform-modules-dev-demo-bucket"
+  versioning_enabled = true
+
+  tags = {
+    Environment = "dev"
+  }
 }
 ```
 
@@ -217,18 +235,23 @@ output "vpc_dev_id" {
   value       = module.vpc_dev.vpc_id
 }
 
-output "vpc_prod_id" {
-  description = "ID du VPC Prod"
-  value       = module.vpc_prod.vpc_id
+output "ec2_dev_instance_id" {
+  description = "ID of the dev EC2 instance."
+  value       = module.ec2_dev.instance_id
+}
+
+output "s3_dev_bucket_id" {
+  description = "ID of the dev S3 bucket."
+  value       = module.s3_dev.bucket_id
 }
 ```
 
 - Dans l'exemple ci-dessus,
 
-  1. Le **module VPC** est défini une seule fois dans `modules/vpc/`
-  2. Il est **réutilisé deux fois** : une fois pour l'environnement dev et une fois pour l'environnement prod
-  3. Chaque appel de module fournit ses propres valeurs de variables (`vpc_name`, `vpc_cidr`, etc.)
-  4. Les **outputs du module** (`vpc_id`, `subnet_id`) sont accessibles depuis la configuration principale via `module.<nom_module>.<nom_output>`
+  1. The **VPC module** creates the network foundation and exposes `subnet_id`.
+  2. The **EC2 module** consumes `module.vpc_dev.subnet_id` to launch an instance in that subnet.
+  3. The **S3 module** creates a versioned bucket for the same environment.
+  4. Module outputs are accessed from the root configuration with `module.<module_name>.<output_name>`.
 
 ---
 
@@ -267,64 +290,42 @@ Resource actions are indicated with the following symbols:
 Terraform will perform the following actions:
 
 # module.vpc_dev.aws_vpc.this will be created
-+ resource "aws_vpc" "this" {
-    + cidr_block = "10.0.0.0/16"
-    + id         = (known after apply)
-    + tags       = {
-        + "Name"      = "MyVPC-Dev"
-        + "Owner"     = "Venkatesh"
-        + "Terraform" = "yes"
-      }
-  }
-
 # module.vpc_dev.aws_subnet.this will be created
-+ resource "aws_subnet" "this" {
-    + availability_zone = "us-east-1a"
-    + cidr_block        = "10.0.1.0/24"
-    + id                = (known after apply)
-    + vpc_id            = (known after apply)
-  }
+# module.ec2_dev.aws_instance.this will be created
+# module.ec2_dev.aws_eip.this will be created
+# module.s3_dev.aws_s3_bucket.this will be created
+# module.s3_dev.aws_s3_bucket_versioning.this will be created
 
-# module.vpc_prod.aws_vpc.this will be created
-+ resource "aws_vpc" "this" {
-    + cidr_block = "10.1.0.0/16"
-    + id         = (known after apply)
-    + tags       = {
-        + "Name"      = "MyVPC-Prod"
-        + "Owner"     = "Venkatesh"
-        + "Terraform" = "yes"
-      }
-  }
-
-# module.vpc_prod.aws_subnet.this will be created
-+ resource "aws_subnet" "this" {
-    + availability_zone = "us-east-1b"
-    + cidr_block        = "10.1.1.0/24"
-    + id                = (known after apply)
-    + vpc_id            = (known after apply)
-  }
-
-Plan: 4 to add, 0 to change, 0 to destroy.
+Plan: 6 to add, 0 to change, 0 to destroy.
 
 Changes to Outputs:
-  + vpc_dev_id  = (known after apply)
-  + vpc_prod_id = (known after apply)
+  + ec2_dev_instance_id = (known after apply)
+  + ec2_dev_public_ip   = (known after apply)
+  + s3_dev_bucket_arn   = (known after apply)
+  + s3_dev_bucket_id    = (known after apply)
+  + vpc_dev_id          = (known after apply)
 
 module.vpc_dev.aws_vpc.this: Creating...
 module.vpc_dev.aws_vpc.this: Creation complete after 1s [id=vpc-0a1b2c3d4e5f00010]
 module.vpc_dev.aws_subnet.this: Creating...
 module.vpc_dev.aws_subnet.this: Creation complete after 1s [id=subnet-0a1b2c3d4e5f00010]
-module.vpc_prod.aws_vpc.this: Creating...
-module.vpc_prod.aws_vpc.this: Creation complete after 1s [id=vpc-0a1b2c3d4e5f00020]
-module.vpc_prod.aws_subnet.this: Creating...
-module.vpc_prod.aws_subnet.this: Creation complete after 1s [id=subnet-0a1b2c3d4e5f00020]
+module.ec2_dev.aws_instance.this: Creating...
+module.ec2_dev.aws_instance.this: Creation complete after 1s [id=i-0a1b2c3d4e5f00010]
+module.ec2_dev.aws_eip.this: Creating...
+module.ec2_dev.aws_eip.this: Creation complete after 1s [id=eipalloc-0a1b2c3d4e5f00010]
+module.s3_dev.aws_s3_bucket.this: Creating...
+module.s3_dev.aws_s3_bucket.this: Creation complete after 1s [id=terraform-modules-dev-demo-bucket]
+module.s3_dev.aws_s3_bucket_versioning.this: Creating...
+module.s3_dev.aws_s3_bucket_versioning.this: Creation complete after 1s [id=terraform-modules-dev-demo-bucket]
 
-Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+Apply complete! Resources: 6 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-vpc_dev_id  = "vpc-0a1b2c3d4e5f00010"
-vpc_prod_id = "vpc-0a1b2c3d4e5f00020"
+ec2_dev_instance_id = "i-0a1b2c3d4e5f00010"
+ec2_dev_public_ip = "203.0.113.10"
+s3_dev_bucket_id = "terraform-modules-dev-demo-bucket"
+vpc_dev_id = "vpc-0a1b2c3d4e5f00010"
 ```
 
 </details>
